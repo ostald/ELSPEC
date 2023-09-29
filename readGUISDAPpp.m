@@ -40,9 +40,11 @@ function [h,ts,te,pp,ppstd,loc,azel,I] = readGUISDAPpp( ppdir , exp , radar , ..
 
 % list mat files
 fp = listGUISDAPfiles( ppdir );
+fprintf('Number of files: %d\n', length(fp))
 
 % if no files available
 if isempty(fp)
+    disp('No files available!')
     h=[];
     ts=[];
     te=[];
@@ -289,10 +291,11 @@ switch version
     error('unknown version number')
 end
 
+%nprofstep = 1; % BG-20221004: I dont understand the nprofstep-variable?
 % load the first file to get the matrix sizes
 load(ff{1});
-i_end = find(diff(r_pprange)<0);
-i_end = i_end(1:nprofstep:end); % there are four profiles, we want only the
+i_end = [find(diff(r_pprange)<0);numel(r_pprange)];% Should give all ends also the last one? BG-20221004
+i_end = i_end(1:nprofstep:end); % there are N profiles, we want only the
                         % first one...
 nh = i_end(1);
 nf = length(ff);
@@ -325,16 +328,15 @@ else
     error(['Unknown time resolution type',tres])
 end
 
-
 for k = 1:length(ff)
 
     load(ff{k})
 
     % there are several profiles in the file, find their ends
-    i_end = find(diff(r_pprange)<0);
+    i_end = [find(diff(r_pprange)<0);numel(r_pprange)]; % was (BG-20221004): find(diff(r_pprange)<0);
 
     % start indices of profiles
-    i2 = [1;i_end(nprofstep:nprofstep:end)+1];
+    i2 = [1;i_end(nprofstep:nprofstep:end-1)+1];
 
     % end indices of profiles
     i3 = [i_end(1:nprofstep:end)];%length(r_pp)];
@@ -360,10 +362,10 @@ for k = 1:length(ff)
     else
         h( : , (k-1)*nppdump+1 ) = r_pprange(i2(1):i3(1))*sin(r_el*pi/ ...
                                                           180);
-        azel((k-1)*nppdump+1) = [r_az r_el];
+        azel((k-1)*nppdump+1,:) = [r_az r_el];
         for kpp=2:nppdump
             h( : , (k-1)*nppdump+kpp ) = h( : , (k-1)*nppdump+1 );
-            azel((k-1)*nppdump+kpp) = [r_az r_el];
+            azel((k-1)*nppdump+kpp,:) = [r_az r_el];
         end
     end
 

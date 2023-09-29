@@ -89,6 +89,9 @@ else
     ninteg = length(dt);
     nemod = NaN(length(ne0),ninteg);
     neEnd = NaN(length(ne0),ninteg);
+    if ~exist('s','var')
+        keyboard
+    end
     nemod(:,1) = integrate_continuity_equation(ne0(:),s(1,:)',dt(1),A,dE(:),alpha(:,1),integtype);
     neEnd(:,1) = integrate_continuity_equation(ne0(:),s(1,:)',dt(1),A,dE(:),alpha(:,1),integ_type_end);
     if ninteg > 1

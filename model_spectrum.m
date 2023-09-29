@@ -25,6 +25,12 @@ function s = model_spectrum(X0,E,S_type)
     for k=1:length(X0)
       p = p + X0(k).*(E/1e4).^(k-1);
     end
+
+    %k = 1:length(X0);
+    %p4 = X0 * ((E/1e4).^(k'-1));
+    %if p ~= p4
+    %    error('Polynomial is not the same!')
+    %end
     
     s = E.*exp( p );
   elseif strcmp(lower(S_type),'ger')
