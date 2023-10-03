@@ -23,6 +23,7 @@ egrid = logspace(1,5,400);
 %fitdirUM = '/media/bgu001/5f5e8978-a828-4fd4-aabf-2032a3fb895b/Data/EISCAT/Analysed/2006-12-12_arc1_4@uhf';
 %fitdir = '/mnt/data/bjorn/EISCAT/Analysed/2006-12-12_arc1_4@uhf';
 fitdir = '../Data/Eiscat/fit';
+fitdir = ppdir + '/../fit'
 %ppdirUM = '/media/bgu001/5f5e8978-a828-4fd4-aabf-2032a3fb895b/Data/EISCAT/tmp-ionlines/2006-12-12_arc1_4@uhf-pp';
 %ppdir = '/mnt/data/bjorn/EISCAT/Analysed/2006-12-12_arc1_4@uhf-pp';
 %ppdir = '../Data/Eiscat/pp';
@@ -149,14 +150,14 @@ ErrType = 'l'; % L for Lorentzian.
 
 if iter > 0
     j = iter - 1;
-    icdir = fullfile('..',log_dir,["IC_" + j + ".mat"]);
+    icdir = fullfile('../ElectronPrecipitation',log_dir,["IC_" + j + ".mat"]);
     %icdir = "../" + log_dir + "IC_" + j + ".mat";
     icdata = load(icdir);
     iri_ic = icdata.elspec_iri_sorted;
     alpha_eff = icdata.eff_rr;
     ne_init = icdata.ne_init;
 
-    elspec_m1 = fullfile('..',log_dir,["ElSpec-iqt_IC_" + j + ".mat"]);
+    elspec_m1 = fullfile('../ElectronPrecipitation',log_dir,["ElSpec-iqt_IC_" + j + ".mat"]);
     nsteps_old = load(elspec_m1).ElSpecOut.nSteps;
     %ninteg = nsteps_old(1); did not result in converging behaviour
 else
@@ -166,7 +167,7 @@ else
 end
 
 %Outname = sprintf('../' + log_dir + 'ElSpec-iqt_IC_0');
-Outname = fullfile("..", log_dir, ["ElSpec-iqt_IC_" + iter]);
+Outname = fullfile("../ElectronPrecipitation", log_dir, ["ElSpec-iqt_IC_" + iter]);
 disp(Outname)
 
 
