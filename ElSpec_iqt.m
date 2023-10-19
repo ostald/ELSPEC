@@ -1190,10 +1190,6 @@ function [AICcSec,polycoefs,best_order,n_params,ne,neEnd,Ie,exitflags] = AICcFit
   ne = 0*pp;
   neEnd = 0*pp;
   
-  %with parfor
-  %temp_exitflags = [];
-  %temp_AICcSec = [];
-
   % then run the fit for all different numbers of nodes
   for nn = 1:Directives.maxorder
     % Here we have the parameters for the Generalized
@@ -1211,12 +1207,8 @@ function [AICcSec,polycoefs,best_order,n_params,ne,neEnd,Ie,exitflags] = AICcFit
     else
       % defaults for the exponential of polynomials
       if nn==1
-      %if 1 (with parfor)
         % X0 = repmat([20,-5],2,1); % This seemed very peculiar! BG-20220927
-        X0 = repmat([20,-5],1,1);
-        %with parfor:
-        %X0 = repmat([20,-5, -0.5, -0.5, -0.5, -0.5],1,1); 
-        %X0 = X0(1:nn+1);
+        X0 = repmat([20,-5],1,1); 
       else
         % X0 = [polycoefs(nn-1,1:nn,1),-0.5];
         X0 = polycoefs{nn-1,1}(1,:);
@@ -1311,15 +1303,8 @@ function [AICcSec,polycoefs,best_order,n_params,ne,neEnd,Ie,exitflags] = AICcFit
     end
     exitflags(nn,1:n_tsteps) = exitflag;
     AICcSec(nn,1:n_tsteps) = fval;
-    %with parfor:
-    %temp_exitflags(nn) = exitflag;
-    %temp_AICcSec(nn) = fval;
     
   end
-  %with parfor:
-  %exitflags = repmat(temp_exitflags.', 1, n_tsteps);
-  %AICcSec = repmat(temp_AICcSec.', 1, n_tsteps);
-
 
   % pick the best AICc value
   [minAIC,locminAIC] = min(AICcSec(:,1));
