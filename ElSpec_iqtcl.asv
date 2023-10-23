@@ -1,5 +1,5 @@
-function ElSpecOut = ElSpec_iqt_ic(varargin)
-% ElSpec Estimate primary energy spectra of precipitating electrons from
+function ElSpecOut = ElSpec_iqtcl(varargin)
+% ElSpec Estimate primary energy spectra of precipitating electrons fromElSpecRes,iT2plot,ops
 % EISCAT incoherent scatter data.
 %
 %
@@ -53,11 +53,6 @@ function ElSpecOut = ElSpec_iqt_ic(varargin)
 %  nstep        number of ne-slices in each time-step, default 1
 %  saveiecov    logical, should the large covariance matrices of
 %               the flux estimates be saved? default false.
-%  alpha_eff    effective recombination rates calculated from IC
-%               integration
-%  iri_ic       species densities at times ts calculated with IC integration    
-%  iteration    iteration of convergence algorithm
-%  ne_init      initial electron density          
 %
 % OUTPUT:
 %  ElSpecOut    A MATLAB structure with fields:...
@@ -133,7 +128,7 @@ function ElSpecOut = ElSpec_iqt_ic(varargin)
 % This is free software, licensed under GNU GPL version 2 or later
 
 persistent ElSpecLicenseShown
-ElSpecLicenseShown = false;
+
 
 % display the copyright message only once
 if isempty(ElSpecLicenseShown)
@@ -190,8 +185,7 @@ checkIonomodel = @(x) any(validatestring(x,validIonomodel));
 defaultRecombmodel = 'SheehanGr';
 validRecombmodel = {'SheehanGr','SheehanEx','Rees','ReesO2+', ...
                     'ReesN2+','ReesNO+','SheehanGrO2+', ...
-                    'SheehanGrN2+','SheehanGrNO+','delPozo1','delPozo2', ...
-                    'SheehanGrFlipchem'};
+                    'SheehanGrN2+','SheehanGrNO+','delPozo1','delPozo2'};
 checkRecombmodel = @(x) any(validatestring(x,validRecombmodel));
 
 % type of integration
@@ -301,24 +295,6 @@ checkInterpSpec = @(x) ((numel(x) == 1) & isnumeric(x) & ...
 defaultFAdev = 3;
 checkFAdev = @(x) (isnumeric(x)&length(x)==1);
                     
-
-% custom densities
-defaultiri_ic = 0;
-checkiri_ic = @(x) 1; %(ismatrix(x));
-
-% custom recombintaion rates
-defaultalpha_eff = 0;
-checkalpha_eff = @(x) (ismatrix(x) || 0);
-
-% custom recombintaion rates
-defaultiteration = 0;
-checkiteration = @(x) (isnumeric(x) & (numel(x)==1));
-
-% defined initial electron density
-default_ne_init = 0;
-check_ne_init = @(x) ((isvector(x) & all(x>0)) || x==0);
-
-
 if exist('inputParser') %#ok<EXIST> 
   % parse the input
   p = inputParser;
@@ -354,12 +330,6 @@ if exist('inputParser') %#ok<EXIST>
   addParameter(p,'Outfilename',defaultOutfilename,checkOutfilename);
   addParameter(p,'Ietype',defaultIetype,checkIetype);
   addParameter(p,'InterpSpec',defaultInterpSpec,checkInterpSpec);
-
-  addParameter(p,'alpha_eff',defaultalpha_eff,checkalpha_eff);
-  addParameter(p,'iri_ic',defaultiri_ic,checkiri_ic);
-  addParameter(p,'iteration',defaultiri_ic,checkiri_ic);
-  addParameter(p,'ne_init',default_ne_init,check_ne_init);
-
   parse(p,varargin{:})
   
   %out = struct;
@@ -397,22 +367,16 @@ else
   def_pars.ErrType = defaultErrType;
   def_pars.ErrWidth = defaultErrWidth;
   def_pars.Outliers = defaultOutliers;
-  def_pars.Outfilename = defaultOutfilename;
+  def_pars.Outliers = defaultOutliers;
   def_pars.Ietype = defaultIetype;
   def_pars.InterpSpec = defaultInterpSpec;
   
-  def_pars.iri_ic = defaultiri_ic;
-  def_pars.alpha_eff = defaultalpha_eff;
-  def_pars.iteration = defaultiteration;
-  def_pars.ne_init = default_ne_init
-                    
-
   out = parse_pv_pairs(def_pars,varargin);
   out.E = out.egrid;
   
 end
 % check that we have either ppdir or fitdir, or both
-if isempty(out.ppdir) & isempty(out.fitdir)
+if isempty(out.ppdir) && isempty(out.fitdir)
     error('Either ppdir or fitdir must be given')
 end
 
@@ -499,14 +463,8 @@ else
         readFitData( out.ppdir , out.fitdir , out.hmin , out.hmax , ...
                      out.btime , out.etime , out.experiment , out.radar , ...
                      out.version , out.tres , readIRI, p.Results.fadev , p.Results.bottomstdfail);
-    % disp("WARNING: Densities adjusted in Elsepc_iqt_ic line 501")
-    % nNOp = out.iri(:, 8, :);      
-    % out.iri(:, 9, :) = nNOp*2; %set o2p to same as nop (0.33, 0.33 and 0.33 ne)     
-    % out.iri(:,10, :) = nNOp/3; %set op to same as nop 
-
-
     if strcmp(out.recombmodel,'SheehanGrFlipchem')
-        out.iri = calculateFlipchemComposition(out.ts,out.h,out.par,out.pp,out.loc,out.iri);
+    out.iri = calculateFlipchemComposition(out.ts,out.h,out.par,out.pp,out.loc,out.iri);
     end
     % warn about the ESR compositions
     if strcmp(p.Results.radar,'esr')
@@ -520,21 +478,8 @@ else
         end
     end
 
-    if numel(out.iri_ic) > 1
-        %replace density model with IC values
-        out.iri = out.iri_ic;
-    end
 
 end
-
-%figure
-%pcolor(out.ts, out.h, squeeze(out.iri(:, 3, :)))
-
-% if all(out.par(:, 3, :) == repmat(squeeze(out.par(:, 3, 1)), 1, max(size(out.par(1, 3, :)))), 'all')
-%     error("No Time variation in electron temperature.")
-% end
-
-
 % nt = 2^floor(log2(numel(out.ts)));
 nt = numel(out.ts); % 128*floor(numel(out.ts)/128); 
 % Change above since there is no FFT-type reason to stick to powers
@@ -609,9 +554,8 @@ out.AICc = NaN(out.maxorder,nt); % an array for the information
 
 out.IeCov = NaN(nE,nE,nt);   % Covariances of flux estimates
 out.IeStd = NaN(nE,nt); % standard deviation of flux estimates
-%out.alpha = NaN(nh,nt); % an array for the effective recombination
-%                        % rates
-
+out.alpha = NaN(nh,nt); % an array for the effective recombination
+                        % rates
 out.q = NaN(nh,nt); % an array for ion production rates
 out.polycoefs = cell(out.maxorder,nt);
 out.polycoefsCovar = NaN(out.maxorder,out.maxorder+1,out.maxorder+1,nt);
@@ -670,24 +614,15 @@ A(isnan(A)) = 0;
 
 % update the effective recombination coefficient. Assume N2+
 % density to be zero
-if numel(out.alpha_eff) > 1
-    %replace standart model with IC values
-    out.alpha = out.alpha_eff; 
-else
-    for it = 1:numel(out.ts)
-      out.alpha(:,it) = effective_recombination_coefficient(out.h, ...
+for it = 1:numel(out.ts)
+  out.alpha(:,it) = effective_recombination_coefficient(out.h, ...
                                                     out.par(:,3,it), ...
                                                     out.iri(:,9,it), ...
                                                     out.iri(:,9,it).*0, ...
                                                     out.iri(:,8,it), ...
                                                     out.recombmodel );
-      if any(~isreal(out.alpha(:, it)))
-          disp(it)
-		error("Imaginary alpha detected")
-          dbstop if true
-      end
-    end
 end
+
 
 % save interval is 100 step, independently from the time resolution
 ndtsave = 20;%ceil(mean(120./out.dt));
@@ -720,7 +655,6 @@ dt = out.dt;
 polycoefs = out.polycoefs;
 ieprior = out.ieprior;
 stdprior = out.stdprior;
-
 % 1st fit spectrum for ne0 from the first few electron-density-profiles
 [AICc1,polycoefs1,best_order1,n_params1,ne1,neEnd1,Ie1] = AICcFitParSeq(pp(:,1:Directives.ninteg),...
                                                   ppstd(:,1:Directives.ninteg),...
@@ -734,24 +668,7 @@ stdprior = out.stdprior;
                                                   [],... % Ie(t) constant
                                                   Directives);
 ne0 = sqrt(A*(Ie1(:,1).*out.dE')./alpha(:,1));% neEnd(:,end);
-out.ne0 = ne0;
-out.q0 = A*(Ie1(:,1).*out.dE');
-
-% figure
-% hold on
-% plot(ne0, out.h)
-% legend('ne0')
-% drawnow()
-
-%replace ne with value from IC 
-% removed 05.04.23 bc ne_init is based on old q, new alpha
-%       assuming steady state (both the case here and with 30min time
-%       window in IC), ne = sqrt(q/alpha) => newly fittet q is better
-%if numel(out.ne_init) > 1
-%    ne0 = out.ne_init';
-%end
 Ie0 = Ie1;
-
 % $$$ [AICc1,polycoefs1,best_order1,n_params1,ne1,neEnd1,Ie1] = AICcFitParSeq(pp(:,1:Directives.ninteg),...
 % $$$                                      ppstd(:,1:Directives.ninteg),...
 % $$$                                      alpha(:,1:Directives.ninteg),...
@@ -789,10 +706,8 @@ while iStart < numel(dt)
                            out.iri(:,7,iHalfway), ...
                            out.iri(:,1,iHalfway),...
                            out.ionomodel, out.I);
-
   A(isnan(A)) = 0;
-
-
+  
   % 2nd fit spectrum for the entire event
   [cAICc,cpolycoefs,cbest_order,cn_params,cne,cneEnd,cIe,cexitflag] = AICcFitParSeq(pp(:,iStart:iEnd),...
                                                     ppstd(:,iStart:iEnd),...
@@ -827,11 +742,6 @@ while iStart < numel(dt)
                                                     out);
   % disp(['returned from recurse_AICfit, nt: ',num2str(numel(cnSteps))])
   ne0 = cneEnd(:,end);
-
-  % plot(cne(:, 1), out.h)
-  % legend('ne0', 'cne1')
-  % pause()  
-
   if iStart == 1
     ne_all         = cne;
     neEnd_all      = cneEnd;
@@ -869,14 +779,14 @@ ne0Cov = diag(mean(ppstd(:,1:out.nSteps(1)).^2,2)/out.nSteps(1));
 % error estimation for the coefficients from linearized theory
 xCovar = ElSpec_error_estimate_polycoefs( out.pp(:,1:out.nSteps(1)), ...
                                           ppstd(:,1:out.nSteps(1)), ...
-                                          ne0, ...                          => should be out.ne0(:, 1)? OS
+                                          ne0, ...
                                           ne0Cov, ...
                                           A, ...
                                           out.alpha(:,1), ...
                                           out.dt(1:out.nSteps(1)), ...
                                           out.Ec, ...
                                           out.dE, ...
-                                          'endNe', ...% TO-BE-FIXED!        => what is to be fixed? OS
+                                          'neEnd', ...% TO-BE-FIXED!
                                           out.ieprior, ...
                                           out.stdprior, ...
                                           polycoefs_all{best_order_all(1),1},... 
@@ -887,13 +797,11 @@ xCovar = ElSpec_error_estimate_polycoefs( out.pp(:,1:out.nSteps(1)), ...
 
 it = 1;
 while it+out.nSteps(it)<=numel(out.te)
-
-  ne0 = out.ne(:, it+[0:out.nSteps(it)-1])
   
   xCovar = ElSpec_error_estimate_polycoefs( out.pp(:,it+[0:out.nSteps(it)-1]), ...
                                             out.ppstd(:,it+[0:out.nSteps(it)-1]),...
-                                            ne0, ...   % These buggers              => should be out.ne0? OS => also update to the correct timestep
-                                            ne0Cov,... % are tricky!                => same here, but needs to be calculated first
+                                            ne0, ...   % These buggers
+                                            ne0Cov,... % are tricky!
                                             A, ...
                                             out.alpha(:,it+[0:out.nSteps(it)-1]), ...
                                             out.dt(it+[0:out.nSteps(it)-1]), ...
@@ -915,13 +823,13 @@ while it+out.nSteps(it)<=numel(out.te)
                                         out.Ec );
   currIeStd = sqrt(diag(currIeCov));
   for tt = it:(it+out.nSteps(it)-1)
-    out.IeCov(:,:,tt) = ElSpec_error_estimate_Ie( xCovar(1:(out.best_order(it)+1),...
-                                                         1:(out.best_order(it)+1)), ...
-                                                  polycoefs_all{best_order_all(it),it}, ...
-                                                  out.Ec );
-    out.IeStd(:,tt) = sqrt(diag(out.IeCov(:,:,tt)));
-    % out.IeCov(:,:,tt) = currIeCov;
-    % out.IeStd(:,tt) = currIeStd;
+    % out.IeCov(:,:,tt) = ElSpec_error_estimate_Ie( xCovar(1:(out.best_order(it)+1),...
+    %                                                      1:(out.best_order(it)+1)), ...
+    %                                               polycoefs_all{best_order_all(it),it}, ...
+    %                                               out.Ec );
+    % out.IeStd(:,tt) = sqrt(diag(out.IeCov(:,:,tt)));
+    out.IeCov(:,:,tt) = currIeCov;
+    out.IeStd(:,tt) = currIeStd;
   end
 
   [currneEndStd, currneEndCov] = ElSpec_error_estimate_ne2( ne0, ...
@@ -932,29 +840,23 @@ while it+out.nSteps(it)<=numel(out.te)
                                                             out.Ec, ...
                                                             out.dE(:), ...
                                                             out.alpha(:,(it+out.nSteps(it)-1)), ...
-                                                          'endNe' );
-
-  ne0Cov = currneEndCov
-  %take currneEndCov for input for next  ne0Cov
-  %collect output
-
-
-  % for tt = it:(it+out.nSteps(it)-1)
-  %   % [out.neEndStd(:,tt) , out.neEndCov(:,:,tt)] = ...
-  %   %   ElSpec_error_estimate_ne2( ne0, ...
-  %   %                              polycoefs_all{best_order_all(it),it}, ...
-  %   %                              xCovar, ...
-  %   %                              sum(out.dt(it:(it+out.nSteps(it)-1))), ...
-  %   %                              A, ...
-  %   %                              out.Ec, ...
-  %   %                              out.dE(:), ...
-  %   %                              out.alpha(:,(it+out.nSteps(it)-1)), ...
-  %   %                              'endNe' );
-  %   out.neEndStd(:,tt) = currneEndStd;
-  %   out.neEndCov(:,:,tt) = currneEndCov;
-  % 
-  %end
-  % [out.neEndStd(:,(it+out.nSteps(it)-1)) , out.neEndCov(:,:,(it+out.nSteps(it)-1))]= ...
+                                                           'endNe' );
+  for tt = it:(it+out.nSteps(it)-1)
+    % [out.neEndStd(:,tt) , out.neEndCov(:,:,tt)] = ...
+    %   ElSpec_error_estimate_ne2( ne0, ...
+    %                              polycoefs_all{best_order_all(it),it}, ...
+    %                              xCovar, ...
+    %                              sum(out.dt(it:(it+out.nSteps(it)-1))), ...
+    %                              A, ...
+    %                              out.Ec, ...
+    %                              out.dE(:), ...
+    %                              out.alpha(:,(it+out.nSteps(it)-1)), ...
+    %                              'endNe' );
+    out.neEndStd(:,tt) = 
+    out.neEndCov(:,:,tt) = 
+        
+  end
+  %[out.neEndStd(:,(it+out.nSteps(it)-1)) , out.neEndCov(:,:,(it+out.nSteps(it)-1))]= ...
   %    ElSpec_error_estimate_ne2( ne0, ...
   %                               polycoefs_all{best_order_all(it),it}, ...
   %                               xCovar, ...
@@ -1003,14 +905,13 @@ for it = 1:numel(out.ts)
 end
 ElSpecOut = out;
 try
-  save(outfilename,'ElSpecOut', "-v7.3")
+  save(outfilename,'ElSpecOut')
 catch
   disp(['Failed to save ElSpecOut into file:',outfilename])
 end
 end
 
 function [ne,neEnd,Ie,polycoefs,best_order,n_params,exitflag,nSteps,idx_out] = recurse_AICfit(ne,neEnd,pp,ppstd,alpha,dt,ne00,A,polycoefs,best_order,n_params,Ie,idx_in,exitflag,ieprior,stdprior,Ie0,Directives)
-%                                                                                                                        ne00 a priori electron density
 % RECURSE_AICFIT - maybe better to scrap AICFull in the outputs.
 %   
 %  savename = sprintf('in-%03i-%03i.mat',idx_in(1),numel(idx_in));
@@ -1031,7 +932,6 @@ function [ne,neEnd,Ie,polycoefs,best_order,n_params,exitflag,nSteps,idx_out] = r
   else
     % Then there splitting-work to be tested
     % First we try breaking into halves
-
     idxPartition2 = floor(size(pp,2)/2);
     idxPartition3 = floor(size(pp,2)/3);
     [AIC1_2,polycoefs1_2,b_o1_2,n_params1_2,ne1_2,neEnd1_2,Ie1_2,exitflag1_2] = AICcFitParSeq(pp(:,1:idxPartition2),...
@@ -1063,9 +963,6 @@ function [ne,neEnd,Ie,polycoefs,best_order,n_params,exitflag,nSteps,idx_out] = r
                       numel(ne1_2) + numel(ne2_2), ...
                       Directives.ErrType, ...
                       Directives.ErrWidth );
-
-
-    
     % Then we try to split the intervall into thirds
     idxPartition3 = floor(size(pp,2)/3);
     if idxPartition3 == 0
@@ -1113,8 +1010,6 @@ function [ne,neEnd,Ie,polycoefs,best_order,n_params,exitflag,nSteps,idx_out] = r
                       Directives.ErrWidth );
     end
     
-    %disp([AICFull, AIChalves, AICthirds])
-
     if AIChalves < AICFull & AIChalves <= AICthirds
       % Divide into 2 halves
       [ne1_2,neEnd1_2,Ie1_2,polycoefs1_2,best_order1_2,n_params1_2,exitflag1_2,nSteps1_2,idx_out1_2] = recurse_AICfit(ne1_2,...
@@ -1310,11 +1205,10 @@ function [AICcSec,polycoefs,best_order,n_params,ne,neEnd,Ie,exitflags] = AICcFit
 % xOut.best_orderX, xOut.IeX, xOut.neX, xOut.neEndX
 
   S_type = Directives.Ietype;
-  fms_opts = optimset('fminsearch');
+  fms_opts = optimset('lsqnonlin');
   fms_opts.Display = 'off';%'off';%'final';
   fms_opts.MaxFunEvals = 1e4;
   fms_opts.MaxIter = 50;
-  fms_opts.MaxIter = 1e6;
   fms_opts.TolFun = 1e-8;
   fms_opts.TolX = 1e-8;
 
@@ -1457,7 +1351,7 @@ function [AICcSec,polycoefs,best_order,n_params,ne,neEnd,Ie,exitflags] = AICcFit
 
     else
       % the normal fit
-      [x,fval,exitflag] = fminsearchbnd( @(p) ElSpec_fitfun(p, ...          %if else statement does the same thing, so can be done in one. OS 02.10.23
+      [x,fval,exitflag] = fminsearchbnd( @(p) ElSpec_fitfun(p, ...
                                                         pp, ...
                                                         ppstd, ...
                                                         ne00, ...
@@ -1465,7 +1359,7 @@ function [AICcSec,polycoefs,best_order,n_params,ne,neEnd,Ie,exitflags] = AICcFit
                                                         alpha, ...
                                                         dt, ...
                                                         Directives.Ec, ...
-                                                        Directives.dE, ...
+                                                        Directives.dE , ...
                                                         'integrate', ...
                                                         ieprior, ...
                                                         stdprior, ...
@@ -1474,7 +1368,6 @@ function [AICcSec,polycoefs,best_order,n_params,ne,neEnd,Ie,exitflags] = AICcFit
                                                         Directives.ErrWidth,...
                                                         S_type), ...
                                          X0, X0min, X0max, fms_opts);
-    %   try
       [x,fval,~,exitflag] = lsqnonlin( @(p) ElSpec_resfun(p, ...
                                                           pp, ...
                                                           ppstd, ...
@@ -1492,28 +1385,6 @@ function [AICcSec,polycoefs,best_order,n_params,ne,neEnd,Ie,exitflags] = AICcFit
                                                           Directives.ErrWidth,...
                                                           S_type), ...
                                            x, X0min, X0max, lsq_opts);
-    %   catch
-    %   lsq_opts.Algorithm = 'levenberg-marquardt';
-    %   [x,fval,~,exitflag] = lsqnonlin( @(p) ElSpec_resfun(p, ...
-    %                                                       pp, ...
-    %                                                       ppstd, ...
-    %                                                       ne00, ...
-    %                                                       A, ...
-    %                                                       alpha, ...
-    %                                                       dt, ...
-    %                                                       Directives.Ec, ...
-    %                                                       Directives.dE , ...
-    %                                                       'integrate', ...
-    %                                                       ieprior, ...
-    %                                                       stdprior, ...
-    %                                                       n_meas, ...
-    %                                                       Directives.ErrType, ...
-    %                                                       Directives.ErrWidth,...
-    %                                                       S_type), ...
-    %                                        x, X0min, X0max, lsq_opts);
-    %   lsq_opts.Algorithm = 'trust-region-reflective';
-    %   end
-    % 
       [x,fval,exitflag] = fminsearchbnd( @(p) ElSpec_fitfun(p, ...
                                                         pp, ...
                                                         ppstd, ...
@@ -1531,6 +1402,7 @@ function [AICcSec,polycoefs,best_order,n_params,ne,neEnd,Ie,exitflags] = AICcFit
                                                         Directives.ErrWidth,...
                                                         S_type), ...
                                          x, X0min, X0max, fms_opts);
+      
     end
     
     % collect results

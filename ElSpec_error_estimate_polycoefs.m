@@ -155,14 +155,14 @@ while any(diag(covar)<0) | any(any(isnan(covar))) | any(any(imag(covar)~=0))
     end
 end
 
-%if ntry > 0
-    %    disp('Regularization applied when inverting the Hessian matrix...')
-    %    disp(ntry)
-    %    disp(any(any(isnan(H2))))
-    %    disp(any(diag(covar)<0))
-    %    disp(any(any(isnan(covar))))
-    %    disp(any(any(imag(covar)~=0)))
-    %end
+if ntry > 0
+       disp('Regularization applied when inverting the Hessian matrix...')
+       disp(ntry)
+       disp(any(any(isnan(H2))))
+       disp(any(diag(covar)<0))
+       disp(any(any(isnan(covar))))
+       disp(any(any(imag(covar)~=0)))
+    end
 
 for nn=1:nx
     covar(nn,:) = covar(nn,:)/hscales(nn);
