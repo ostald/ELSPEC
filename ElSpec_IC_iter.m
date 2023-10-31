@@ -171,7 +171,7 @@ else
 end
 
 %Outname = sprintf('../' + log_dir + 'ElSpec-iqt_IC_0');
-Outname = fullfile("..", log_dir, ["ElSpec-iqt_IC_" + iter]);
+Outname = fullfile("../Results", ["ElSpec-iqt_IC_" + iter]);
 disp(Outname)
 
 %opengl hardwarebasic
@@ -219,10 +219,10 @@ ElSpecPlot(ElSpecQT_iqtOutliers_L5, ieelim = [10, 14], faclim = [0, 10], plim = 
 disp(sprintf(datestr(now,'HH:MM:SS')+ " Calculations done, starting figures"))
 print('-dpng',[Outname]);
 disp(sprintf(datestr(now,'HH:MM:SS')+ " PNG figure done"))
-% print('-depsc','-vector',[Outname]);
-% disp(sprintf(datestr(now,'HH:MM:SS')+ " EPS figure done"))
-% print('-dpdf', '-painters', [Outname]);
-% disp(sprintf(datestr(now,'HH:MM:SS')+ " PDF figure done"))
+print('-depsc','-vector',[Outname]);
+disp(sprintf(datestr(now,'HH:MM:SS')+ " EPS figure done"))
+print('-dpdf', '-painters', [Outname]);
+disp(sprintf(datestr(now,'HH:MM:SS')+ " PDF figure done"))
 dstr = sprintf('Done with loop S i1: 0 at %s',datestr(now,'HH:MM:SS'));
 disp(dstr)
 close(gcf)

@@ -28,7 +28,7 @@ nx = k + length(ne0);
 H = zeros(nx,nx);
 
 % the parameter vector
-param = [polycoefs , ne0'];
+param = [polycoefs , ne0(:)'];
 
 % the finite differences
 dpar = [1e-5*5.^[-(1:k)],1e7*ones(1,nx-k)];
@@ -155,14 +155,14 @@ while any(diag(covar)<0) | any(any(isnan(covar))) | any(any(imag(covar)~=0))
     end
 end
 
-if ntry > 0
-       disp('Regularization applied when inverting the Hessian matrix...')
-       disp(ntry)
-       disp(any(any(isnan(H2))))
-       disp(any(diag(covar)<0))
-       disp(any(any(isnan(covar))))
-       disp(any(any(imag(covar)~=0)))
-    end
+% if ntry > 0
+%        disp('Regularization applied when inverting the Hessian matrix...')
+%        disp(ntry)
+%        disp(any(any(isnan(H2))))
+%        disp(any(diag(covar)<0))
+%        disp(any(any(isnan(covar))))
+%        disp(any(any(imag(covar)~=0)))
+%     end
 
 for nn=1:nx
     covar(nn,:) = covar(nn,:)/hscales(nn);

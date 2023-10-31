@@ -20,15 +20,40 @@ function s = model_spectrum(X0,E,S_type)
 % This is free software, licensed under GNU GPL version 2 or later
 
 persistent Epowers
-    if isempty(Epowers) | size(Epowers,2) < numel(X0)
-        Epowers = ones(numel(E),numel(X0));
-        for k = 1:numel(X0)
-            Epowers(:,k) = (E(:)/1e4).^(k-1);
-        end
+  if isempty(Epowers) || size(Epowers,1) < numel(X0)
+    Epowers = ones(size(E));
+    for k = (size(Epowers,1)+1):numel(X0)
+      Epowers(k,:) = (E/1e4).^(k-1);
     end
+  end
 
+% create the polynomial
+  if nargin < 3 || strcmp(lower(S_type),'p')
+    p = E.*0;
+    %p0 = E.*0;
+    for k=1:length(X0)
+      % p0 = p0 + X0(k).*(E/1e4).^(k-1);
+      p = p + X0(k).*Epowers(k,:);
+    end
     
-    % create the polynomial
+    s = E.*exp( p );
+  elseif strcmp(lower(S_type),'ger')
+    X = [1 2 0 1 1];
+    X(1:numel(X0)) = X0;
+    s = E.^X(4).*exp(X(1)-abs((E-X(3)*1e3)/(X(2)*1e3)).^X(5));
+  end
+end
+
+%{
+persistent Epowers
+  if isempty(Epowers) | size(Epowers,2) < numel(X0)
+    Epowers = ones(numel(E),numel(X0));
+    for k = 1:numel(X0)
+      Epowers(:,k) = (E(:)/1e4).^(k-1);
+    end
+  end
+
+% create the polynomial
     p = E(:).*0;
     for k=1:length(X0)
         %p = p + X0(k).*(E(:)/1e4).^(k-1);
@@ -37,28 +62,5 @@ persistent Epowers
     s = E(:).*exp( p(:) );
     
 end
+%}
 
-%Old code from BG ,still relevant?
-%   persistent Epowers
-%   if isempty(Epowers) || size(Epowers,1) < numel(X0)
-%     Epowers = ones(size(E));
-%     for k = (size(Epowers,1)+1):numel(X0)
-%       Epowers(k,:) = (E/1e4).^(k-1);
-%     end
-%   end
-% % create the polynomial
-%   if nargin < 3 || strcmp(lower(S_type),'p')
-%     p = E.*0;
-%     %p0 = E.*0;
-%     for k=1:length(X0)
-%       % p0 = p0 + X0(k).*(E/1e4).^(k-1);
-%       p = p + X0(k).*Epowers(k,:);
-%     end
-% 
-%     s = E.*exp( p );
-%   elseif strcmp(lower(S_type),'ger')
-%     X = [1 2 0 1 1];
-%     X(1:numel(X0)) = X0;
-%     s = E.^X(4).*exp(X(1)-abs((E-X(3)*1e3)/(X(2)*1e3)).^X(5));
-%   end
-% end
