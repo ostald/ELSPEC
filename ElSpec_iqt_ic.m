@@ -58,6 +58,7 @@ function ElSpecOut = ElSpec_iqt_ic(varargin)
 %  iri_ic       species densities at times ts calculated with IC integration    
 %  iteration    iteration of convergence algorithm
 %  ne_init      initial electron density          
+%  refineEgrid  logial, refine energy grid according to the lowest measured altitude? Default 1
 %
 % OUTPUT:
 %  ElSpecOut    A MATLAB structure with fields:...
@@ -246,6 +247,9 @@ checkSaveiecov = @(x) ((isnumeric(x)|islogial(x))&length(x)==1);
 defaultBottomStdFail = 1e10;
 checkBottomStdFail = @(x) (isnumeric(x)&length(x)==1 & x>0);
 
+% % should the energy axis be refined according to the lowest altitude=
+% defaultRefineEgrid = true;
+% checkRefineEgrid = @(x) ((isnumeric(x)|islogial(x))&length(x)==1);
 
 % start time
 defaultBtime = [];
@@ -359,6 +363,8 @@ if exist('inputParser') %#ok<EXIST>
   addParameter(p,'iri_ic',defaultiri_ic,checkiri_ic);
   addParameter(p,'iteration',defaultiri_ic,checkiri_ic);
   addParameter(p,'ne_init',default_ne_init,check_ne_init);
+
+  % addParameter(p,'refineEgrid',defaultRefineEgrid,checkRefineEgrid);
 
   parse(p,varargin{:})
   
@@ -588,6 +594,24 @@ end
 %    out.iri(indd,10,:) = interp1(tsic,Op(indd,:),out.ts,'linear','extrap');
 % end
 
+% if out.refineEgrid
+% 
+%     % Calculate ion production matrix to approximately adjust the energy grid
+%     [A,Ec,dE] = ion_production( out.E , out.h*1000 , out.iri(:,4,1) , ...
+%                                 out.iri(:,5,1) , out.iri(:,6,1) , out.iri(:,7,1) , ...
+%                                 out.iri(:,1,1) , out.ionomodel , out.I);
+%     % adjust the energy grid according to the lowest measured altitude
+%     [~,imax] = max(A(1,:));
+%     if imax < length(Ec)
+%         Ec = Ec(1:imax);
+%         dE = dE(1:imax);
+%         A = A(:,1:imax);
+%         out.E = out.E(1:(imax+1));
+%         out.egrid = out.egrid(1:(imax+1));
+%         %    disp([imax length(Ec)])
+%     end
+% 
+% end
 
 % time step sizes
 out.dt = diff( out.te );

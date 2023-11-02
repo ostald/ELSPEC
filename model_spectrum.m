@@ -20,7 +20,7 @@ function s = model_spectrum(X0,E,S_type)
 % This is free software, licensed under GNU GPL version 2 or later
 
 persistent Epowers
-  if isempty(Epowers) || size(Epowers,1) < numel(X0)
+  if isempty(Epowers) || size(Epowers,1) < numel(X0) || size(Epowers,2)~=numel(E)
     Epowers = ones(size(E));
     for k = (size(Epowers,1)+1):numel(X0)
       Epowers(k,:) = (E/1e4).^(k-1);
