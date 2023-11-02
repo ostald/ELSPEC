@@ -41,7 +41,8 @@ btime = [ 2006 12 12 19 30 0];
 etime = [ 2006 12 12 19 35 0];
 % Selection of which ionisation-profile method to use
 ionomodel = 'Sergienko';
-recombmodel = ['SheehanGr'];
+%recombmodel = ['SheehanGr'];
+recombmodel = ['SheehanGrFlipchem'];
 % and which type of continuity-integration-method to use
 integtype = 'integrate';
 % Time-resolution to use

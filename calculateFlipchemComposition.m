@@ -34,6 +34,7 @@ function modelout = calculateFlipchemComposition(ts,h,par,pp,loc,modelin)
             outputsm = cell(outputs);
             modelout(ih,9,it) = outputsm{5}; % O2+
             modelout(ih,8,it) = outputsm{6}; % NO+
+            modelout(ih,10,it)= outputsm{4}; % O+
         end
     end
     
