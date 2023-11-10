@@ -41,8 +41,8 @@ btime = [ 2006 12 12 19 30 0];
 etime = [ 2006 12 12 19 35 0];
 % Selection of which ionisation-profile method to use
 ionomodel = 'Sergienko';
-%recombmodel = ['SheehanGr'];
-recombmodel = ['SheehanGrFlipchem'];
+recombmodel = ['SheehanGr'];
+%recombmodel = ['SheehanGrFlipchem'];
 % and which type of continuity-integration-method to use
 integtype = 'integrate';
 % Time-resolution to use
@@ -171,8 +171,7 @@ else
     ne_init = 0;
 end
 
-%Outname = sprintf('../' + log_dir + 'ElSpec-iqt_IC_0');
-Outname = fullfile("../Results", ["ElSpec-iqt_IC_" + iter]);
+Outname = fullfile(log_dir, ["ElSpec-iqt_IC_" + iter]);
 disp(Outname)
 
 %opengl hardwarebasic
