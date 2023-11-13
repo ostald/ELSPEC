@@ -53,10 +53,11 @@ function ElSpecOut = ElSpec_iqt_ic(varargin)
 %  nstep        number of ne-slices in each time-step, default 1
 %  saveiecov    logical, should the large covariance matrices of
 %               the flux estimates be saved? default false.
-%  alpha_eff    effective recombination rates calculated from IC
-%               integration
-%  iri_ic       species densities at times ts calculated with IC integration    
-%  iteration    iteration of convergence algorithm
+%  customIRI    define custom IRI model, matrix has to match height and
+%               time resolution (or set to false to invoke IRI model)
+%  customAlpha  define custom effective recombination rates
+%               matrix has to match height and time resolution (or set to
+%               false to calculate alpha from IRI model)
 %  ne_init      initial electron density          
 %  refineEgrid  logial, refine energy grid according to the lowest measured altitude? Default 1
 %
@@ -307,20 +308,16 @@ checkFAdev = @(x) (isnumeric(x)&length(x)==1);
                     
 
 % custom densities
-defaultiri_ic = 0;
-checkiri_ic = @(x) 1; %(ismatrix(x));
+defaultCustomIRI = false;
+checkCustomIRI = @(x) (ndims(x) == 3 || x == false);
 
 % custom recombintaion rates
-defaultalpha_eff = 0;
-checkalpha_eff = @(x) (ismatrix(x) || 0);
-
-% custom recombintaion rates
-defaultiteration = 0;
-checkiteration = @(x) (isnumeric(x) & (numel(x)==1));
+defaultCustomAlpha = false;
+checkCustomAlpha = @(x) (ismatrix(x) || x == false);
 
 % defined initial electron density
-default_ne_init = 0;
-check_ne_init = @(x) ((isvector(x) & all(x>0)) || x==0);
+default_ne_init = false;
+check_ne_init = @(x) ((isvector(x) & all(x>0)) || x==false);
 
 
 if exist('inputParser') %#ok<EXIST> 
@@ -359,9 +356,8 @@ if exist('inputParser') %#ok<EXIST>
   addParameter(p,'Ietype',defaultIetype,checkIetype);
   addParameter(p,'InterpSpec',defaultInterpSpec,checkInterpSpec);
 
-  addParameter(p,'alpha_eff',defaultalpha_eff,checkalpha_eff);
-  addParameter(p,'iri_ic',defaultiri_ic,checkiri_ic);
-  addParameter(p,'iteration',defaultiri_ic,checkiri_ic);
+  addParameter(p,'customAlpha',defaultCustomAlpha,checkCustomAlpha);
+  addParameter(p,'customIRI',defaultCustomIRI,checkCustomIRI);
   addParameter(p,'ne_init',default_ne_init,check_ne_init);
 
   % addParameter(p,'refineEgrid',defaultRefineEgrid,checkRefineEgrid);
@@ -407,9 +403,8 @@ else
   def_pars.Ietype = defaultIetype;
   def_pars.InterpSpec = defaultInterpSpec;
   
-  def_pars.iri_ic = defaultiri_ic;
-  def_pars.alpha_eff = defaultalpha_eff;
-  def_pars.iteration = defaultiteration;
+  def_pars.customIRI = defaultCustomIRI;
+  def_pars.customAlpha = defaultCustomAlpha;
   def_pars.ne_init = default_ne_init
                     
 
@@ -505,6 +500,7 @@ else
         readFitData( out.ppdir , out.fitdir , out.hmin , out.hmax , ...
                      out.btime , out.etime , out.experiment , out.radar , ...
                      out.version , out.tres , readIRI, p.Results.fadev , p.Results.bottomstdfail);
+    
     % disp("WARNING: Densities adjusted in Elsepc_iqt_ic line 501")
     % nNOp = out.iri(:, 8, :);      
     % out.iri(:, 9, :) = nNOp*2; %set o2p to same as nop (0.33, 0.33 and 0.33 ne)     
@@ -526,9 +522,12 @@ else
         end
     end
 
-    if numel(out.iri_ic) > 1
-        %replace density model with IC values
-        out.iri = out.iri_ic;
+    if out.customIRI ~= false 
+        %replace IRI model
+        if size(out.customIRI) ~= size(out.iri)
+            error('Size of custom IRI composition does not match')
+        end
+        out.iri = out.customIRI;
     end
 
 end
@@ -694,9 +693,13 @@ A(isnan(A)) = 0;
 
 % update the effective recombination coefficient. Assume N2+
 % density to be zero
-if numel(out.alpha_eff) > 1
-    %replace standart model with IC values
-    out.alpha = out.alpha_eff; 
+if out.customAlpha ~= false
+    if ~all(size(out.customAlpha) == [length(out.h), length(out.ts)])
+        disp(size(out.customAlpha))
+        disp([length(out.h), length(out.ts)])
+        error('Size of Custom Alpha matrix does not match height and time resolution')
+    end
+    out.alpha = out.customAlpha; 
 else
     for it = 1:numel(out.ts)
       out.alpha(:,it) = effective_recombination_coefficient(out.h, ...
@@ -705,11 +708,12 @@ else
                                                     out.iri(:,9,it).*0, ...
                                                     out.iri(:,8,it), ...
                                                     out.recombmodel );
-      if any(~isreal(out.alpha(:, it)))
-          disp(it)
-		error("Imaginary alpha detected")
-          dbstop if true
-      end
+    end
+end
+for it = 1:numel(out.ts)
+    if any(~isreal(out.alpha(:, it)))
+        disp(it)
+        error("Imaginary alpha detected, are there negative Temperatures?")
     end
 end
 
@@ -767,13 +771,15 @@ out.q0 = A*(Ie1(:,1).*out.dE');
 % legend('ne0')
 % drawnow()
 
-%replace ne with value from IC 
+% replace ne with value from IC 
 % removed 05.04.23 bc ne_init is based on old q, new alpha
 %       assuming steady state (both the case here and with 30min time
 %       window in IC), ne = sqrt(q/alpha) => newly fittet q is better
-%if numel(out.ne_init) > 1
-%    ne0 = out.ne_init';
-%end
+%r eintroduced 13,11,23 for chopping evaluation into 15 min intervalls
+if out.ne_init ~= false
+    ne0 = out.ne_init';
+    out.ne0 = ne0;
+end
 Ie0 = Ie1;
 
 % $$$ [AICc1,polycoefs1,best_order1,n_params1,ne1,neEnd1,Ie1] = AICcFitParSeq(pp(:,1:Directives.ninteg),...
