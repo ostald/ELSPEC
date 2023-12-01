@@ -80,17 +80,17 @@ if iter > 0
     j = iter - 1;
     icdir = fullfile(log_dir,["IC_" + j + ".mat"]);
     icdata = load(icdir);
-    iri_ic = icdata.elspec_iri_sorted;
-    alpha_eff = icdata.eff_rr;
-    ne_init = false
+    customIRI = icdata.elspec_iri_sorted;
+    customAlpha = icdata.eff_rr;
+    neinit = false
 
     elspec_m1 = fullfile(log_dir,["ElSpec-iqt_IC_" + j + ".mat"]);
     nsteps_old = load(elspec_m1).ElSpecOut.nSteps;
     %ninteg = nsteps_old(1); did not result in converging behaviour
 else
-    iri_ic = false;
-    alpha_eff = false;
-    ne_init = false;
+    customIRI = false;
+    customAlpha = false;
+    neinit = false;
 end
 
 Outname = fullfile(log_dir, ["ElSpec-iqt_IC_" + iter]);
@@ -109,9 +109,9 @@ ElSpecQT_iqtOutliers_L5 = ElSpec_iqt_ic('fitdir',fitdir,...
                                        'MaxOrder',maxorder,...
                                        'ninteg',ninteg,...
                                        'Outfilename',Outname,...
-                                       'customIRI', iri_ic, ...
-                                       'customAlpha', alpha_eff, ...
-                                       'ne_init', ne_init, ...
+                                       'customIRI', customIRI, ...
+                                       'customAlpha', customAlpha, ...
+                                       'neinit', neinit, ...
                                        'recombmodel', recombmodel);
 %                                       'ErrType',ErrType,...
 
@@ -120,10 +120,10 @@ ElSpecQT_iqtOutliers_L5 = ElSpec_iqt_ic('fitdir',fitdir,...
 ElSpecPlot(ElSpecQT_iqtOutliers_L5, ieelim = [10, 14], faclim = [0, 10], plim = [0, 60]);
 [fnm1,fnm2,fnm3] = fileparts(ElSpecQT_iqtOutliers_L5.Outfilename) ;
 disp(sprintf(datestr(now,'HH:MM:SS')+ " Calculations done, starting figures"))
-print('-dpng',[Outname]);
-disp(sprintf(datestr(now,'HH:MM:SS')+ " PNG figure done"))
-print('-depsc','-vector',[Outname]);
-disp(sprintf(datestr(now,'HH:MM:SS')+ " EPS figure done"))
+% print('-dpng',[Outname]);
+% disp(sprintf(datestr(now,'HH:MM:SS')+ " PNG figure done"))
+% print('-depsc','-vector',[Outname]);
+% disp(sprintf(datestr(now,'HH:MM:SS')+ " EPS figure done"))
 print('-dpdf', '-painters', [Outname]);
 disp(sprintf(datestr(now,'HH:MM:SS')+ " PDF figure done"))
 dstr = sprintf('Done with loop S i1: 0 at %s',datestr(now,'HH:MM:SS'));

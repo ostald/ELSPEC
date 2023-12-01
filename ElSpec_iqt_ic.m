@@ -58,7 +58,7 @@ function ElSpecOut = ElSpec_iqt_ic(varargin)
 %  customAlpha  define custom effective recombination rates
 %               matrix has to match height and time resolution (or set to
 %               false to calculate alpha from IRI model)
-%  ne_init      initial electron density          
+%  neinit      initial electron density          
 %  refineEgrid  logial, refine energy grid according to the lowest measured altitude? Default 1
 %
 % OUTPUT:
@@ -316,8 +316,8 @@ defaultCustomAlpha = false;
 checkCustomAlpha = @(x) (ismatrix(x) || x == false);
 
 % defined initial electron density
-default_ne_init = false;
-check_ne_init = @(x) ((isvector(x) & all(x>0)) || x==false);
+default_neinit = false;
+check_neinit = @(x) ((isvector(x) & all(x>0)) || x==false);
 
 
 if exist('inputParser') %#ok<EXIST> 
@@ -358,7 +358,7 @@ if exist('inputParser') %#ok<EXIST>
 
   addParameter(p,'customAlpha',defaultCustomAlpha,checkCustomAlpha);
   addParameter(p,'customIRI',defaultCustomIRI,checkCustomIRI);
-  addParameter(p,'ne_init',default_ne_init,check_ne_init);
+  addParameter(p,'neinit',default_neinit,check_neinit);
 
   % addParameter(p,'refineEgrid',defaultRefineEgrid,checkRefineEgrid);
 
@@ -405,7 +405,7 @@ else
   
   def_pars.customIRI = defaultCustomIRI;
   def_pars.customAlpha = defaultCustomAlpha;
-  def_pars.ne_init = default_ne_init
+  def_pars.neinit = default_neinit
                     
 
   out = parse_pv_pairs(def_pars,varargin);
@@ -772,12 +772,12 @@ out.q0 = A*(Ie1(:,1).*out.dE');
 % drawnow()
 
 % replace ne with value from IC 
-% removed 05.04.23 bc ne_init is based on old q, new alpha
+% removed 05.04.23 bc neinit is based on old q, new alpha
 %       assuming steady state (both the case here and with 30min time
 %       window in IC), ne = sqrt(q/alpha) => newly fittet q is better
 %r eintroduced 13,11,23 for chopping evaluation into 15 min intervalls
-if out.ne_init ~= false
-    ne0 = out.ne_init';
+if out.neinit ~= false
+    ne0 = out.neinit';
     out.ne0 = ne0;
 end
 Ie0 = Ie1;
