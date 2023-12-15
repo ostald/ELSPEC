@@ -149,14 +149,14 @@ ErrType = 'l'; % L for Lorentzian.
 
 if iter > 0
     j = iter - 1;
-    icdir = fullfile('..',log_dir,["IC_" + j + ".mat"]);
+    icdir = fullfile(log_dir,["IC_" + j + ".mat"]);
     %icdir = "../" + log_dir + "IC_" + j + ".mat";
     icdata = load(icdir);
     iri_ic = icdata.elspec_iri_sorted;
     alpha_eff = icdata.eff_rr;
     ne_init = icdata.ne_init;
 
-    elspec_m1 = fullfile('..',log_dir,["ElSpec-iqt_IC_" + j + ".mat"]);
+    elspec_m1 = fullfile(log_dir,["ElSpec-iqt_IC_" + j + ".mat"]);
     nsteps_old = load(elspec_m1).ElSpecOut.nSteps;
     %ninteg = nsteps_old(1); did not result in converging behaviour
 else
@@ -166,7 +166,7 @@ else
 end
 
 %Outname = sprintf('../' + log_dir + 'ElSpec-iqt_IC_0');
-Outname = fullfile("..", log_dir, ["ElSpec-iqt_IC_" + iter]);
+Outname = fullfile(log_dir, ["ElSpec-iqt_IC_" + iter]);
 disp(Outname)
 
 
