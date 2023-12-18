@@ -1,4 +1,5 @@
 function ElSpec_IC_iter(iter, log_dir, ppdir)
+dbstop if error
 %% ElSpec extended with Ion Chemitry
 %% Based on Example-script for ElSpec_iqt usage
 % This script should be possible to adapt for anyone with basic skills in
@@ -33,7 +34,7 @@ hmax = 150;
 hmin = 95;
 % Time-limits
 btime = [2006, 12, 12, 19, 30, 0];
-etime = [2006, 12, 12, 19, 35, 0];
+etime = [2006, 12, 12, 20, 35, 0];
 % Selection of which ionisation-profile method to use
 ionomodel = 'Sergienko';
 %recombmodel = 'SheehanGrFlipchem';
