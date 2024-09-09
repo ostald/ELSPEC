@@ -30,8 +30,11 @@ function [Tn,Ti,Te,nN2,nO2,nO,nAr,nNOp,nO2p,nOp,f107,f107a,ap] = modelParams( ti
 % Copyright I Virtanen <ilkka.i.virtanen@oulu.fi>
 % This is free software, licensed under GNU GPL version 2 or later
 
-persistent year_prev iripar apf107table readIRIprev
+persistent year_prev iripar apf107table readIRIprev shownwarning
 
+if isempty(shownwarning)
+  shownwarning = 0;
+end
 % time rounded to the closest full hour
 matlabtime = datetime(round(time/3600)*3600,'ConvertFrom','posixtime');
 year = matlabtime.Year;
@@ -51,24 +54,28 @@ if readIRI
 
     %hh = round((heights-80)/2)+1;
 
-    if (any(heights<80 | heights>150))
-        error('Heights must be between 80 and 150 km');
+    if (any(heights<60 | heights>150))
+        error('Heights must be between 60 and 150 km');
     end
 
     partmp = squeeze(iripar(month,matlabtime.Day,hour,:,:));
 
     hh = 80:2:150;
 
-    nOp = interp1(hh,partmp(:,1),heights);
-    nO2p = interp1(hh,partmp(:,2),heights);
-    nNOp = interp1(hh,partmp(:,3),heights);
+    nOp = max(0,sinh(interp1(hh,asinh(partmp(:,1)),heights,'linear','extrap')));
+    nO2p = max(0,sinh(interp1(hh,asinh(partmp(:,2)),heights,'linear','extrap')));
+    nNOp = max(0,sinh(interp1(hh,asinh(partmp(:,3)),heights,'linear','extrap')));
+    %nO2p = interp1(hh,partmp(:,2),heights);
+    %nNOp = interp1(hh,partmp(:,3),heights);
     %ncluster = interp1(hh,partmp(:,4),heights);
     %nO = interp1(hh,partmp(:,5),heights);
     %nN2 = interp1(hh,partmp(:,6),heights);
     %nO2 = interp1(hh,partmp(:,7),heights);
     %Tn = interp1(hh,partmp(:,8),heights);
-    Ti = interp1(hh,partmp(:,9),heights);
-    Te = interp1(hh,partmp(:,10),heights);
+    %Ti = (interp1(hh,partmp(:,9),heights);
+    %Te = interp1(hh,partmp(:,10),heights);
+    Ti = sinh(interp1(hh,asinh(partmp(:,9)),heights,'linear','extrap'));
+    Te = sinh(interp1(hh,asinh(partmp(:,10)),heights,'linear','extrap'));
 
 else
     nOp = heights*NaN;
@@ -136,7 +143,17 @@ secofday = seconds(matlabtime-dateshift(matlabtime,'start','day'));
 % the correct line from apf107table
 apf107line = find( apf107table(:,1)==ynum & apf107table(:,2)== ...
                    matlabtime.Month & apf107table(:,3)==matlabtime.Day);
-
+if isempty(apf107line)
+  apf107line = size(apf107table,1);
+  if shownwarning == 0
+    disp(['Warning, date of experiment: ',datestr(matlabtime,'yyyy-mm-dd')])
+    disp(['is out of range for ap and f10.7-indices starting and ending at:'])
+    disp(['is out of range for ap and f10.7-indices starting and ending at:'])
+    fprintf('%2d-%02d-%02d - %2d-%02d-%02d\n',apf107table(1,1:3),apf107table(end,1:3))
+    disp('Here we proceed with the last date. Consider updating the index-database.')
+    shownwarning = 1;
+  end
+end
 if ~isempty(apf107line)
 % pick the f10.7 values
 f107 = apf107table(apf107line,14);
@@ -180,6 +197,8 @@ if ~readIRI
     Te = Tn;
     Ti = Tn;
 end
+Te(heights<80) =Tn(heights<80);
+Ti(heights<80) =Tn(heights<80);
 
 year_prev = year;
 readIRIprev = readIRI;

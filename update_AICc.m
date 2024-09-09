@@ -49,11 +49,21 @@ else
   else
     Xend = X0(1,:);
   end
-  for it4s = numel(dt):-1:1
-    X_curr = X0(1,:) + (t(it4s)-t(1))/(t(end)-t(1))*(Xend - X0(1,:));
-    s(it4s,:) = model_spectrum( X_curr, E, s_type );
+  if numel(dt) > 1
+    for it4s = numel(dt):-1:1
+      X_curr = X0(1,:) + (t(it4s)-t(1))/(t(end)-t(1))*(Xend - X0(1,:));
+      s(it4s,:) = model_spectrum( X_curr, E, s_type );
+    end
+  else
+    s(1,:) = model_spectrum( X0, E, s_type );  
   end
 end
+if any(isinf(s))
+  disp('Electron-flux is becoming a tad high...')
+  AIC = realmax;
+  return
+end
+s(isinf(s)) = realmax/1e12;
 % the updated model ne profile
 if strcmp(integtype,'equilibrium')
     nemod = integrate_continuity_equation(ne0(:),s(:),dt(1),A,dE(: ...
@@ -76,6 +86,8 @@ else
     switch lower(integtype)
       case 'endne'
         integ_type_end = 'endNe';
+      case 'neend'
+        integ_type_end = 'endNe';
       case 'integrate'
         integ_type_end = 'endNe';
       case 'linearend'
@@ -89,6 +101,9 @@ else
     ninteg = length(dt);
     nemod = NaN(length(ne0),ninteg);
     neEnd = NaN(length(ne0),ninteg);
+    if ~exist('s','var')
+        keyboard
+    end
     nemod(:,1) = integrate_continuity_equation(ne0(:),s(1,:)',dt(1),A,dE(:),alpha(:,1),integtype);
     neEnd(:,1) = integrate_continuity_equation(ne0(:),s(1,:)',dt(1),A,dE(:),alpha(:,1),integ_type_end);
     if ninteg > 1
@@ -114,8 +129,9 @@ AIC = AICc( nemeas(:) , stdmeas(:).^2 , nemod(:) , nParams , ...
 
 % slight regularization for all coefficients
 AIC = AIC + sum(X0.^2./1e5.*10.^[1:size(X0,2)],'all') - ...
-      diff(s(end-1:end)).*(diff(s(end-1:end))<0);
-
+      1e25*diff(s(end-1:end)).*(diff(s(end-1:end))<0) - ...
+      1e25*diff(s([end-10,end])).*(diff(s([end-10,end]))<0);
+      % BG: yeah, I really dont like Ie ever-increasing with E
 %% the spectrum should go to zero at the high energy end
 %AIC = AIC + s(end)^2;
 

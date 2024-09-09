@@ -1,0 +1,37 @@
+% Change-log
+% 
+% 20240909
+% readFitData - added an input-parameter ppReadingFcn for reading the
+% power-profiles. ppReadingFcn should be a function-handle to a function
+% that has the same output as readGUISDAPpp, here the function is simply
+% passed on to readGUISDAPdata
+%
+% readFitData - lowered the lower boundary to 60 km.
+%
+% readGUISDAPdata - added an input-parameter ppReadingFcn for reading the
+% power-profiles. ppReadingFcn should be a function-handle to a function
+% that has the same output as readGUISDAPpp, here the function is simply
+% passed on to readGUISDAPdata
+%
+% readGUISDAPdata - changed the output for inclination from Ipp to Ipar.
+%
+% modelParameters - lowered the lower altitude boundary to 60 km.
+%
+% modelParameters - modified the re-interpolation to be 
+% max(0,sinh(interp(asinh()))) with linear interpolation and extrapolation.
+% This should be mathematically robust, whether the ion-composition is 
+% sensible is a topic for discussion.
+%
+% modelParameters - forced the electron and ion temperatures below 80 km to 
+% follow the neutral temperatures. This seems at least sensible.
+% 
+% integrate_continuity_equation - now set electron-densities that are NaN to
+% to 1.
+%
+% update_AICc - inserted a shortcut setting AICc to realmax for the case
+% where the electron-spectra becomes infinite. This happened with some 
+% cases where the semi-constrained optimization tries values close to a 
+% boundary (BG guess...)
+%
+% update_AICc - also has a hard-coded penalty-term for a positive 
+% electron-flux gradient at the high-energy end.

@@ -3,7 +3,7 @@ function [h,ts,te,pp,ppstd,par,parstd,model,f107,f107a,f107p,ap,loc,azel,I] = re
                                                   hmax , tmin , tmax ...
                                                   , exp  , radar , ...
                                                   version , tres , ...
-                                                      readIRI , FAdev , BottomStdFail)
+                                                      readIRI , FAdev , BottomStdFail, ppReadingFcn)
 %
 %  Read GUISDAP raw densities (power profiles), GUISDAP fit
 %  results, and model (IRI and MSIS) parameters.
@@ -63,7 +63,7 @@ function [h,ts,te,pp,ppstd,par,parstd,model,f107,f107a,f107p,ap,loc,azel,I] = re
 % Copyright I Virtanen <ilkka.i.virtanen@oulu.fi> and B Gustavsson <bjorn.gustavsson@uit.no>
 % This is free software, licensed under GNU GPL version 2 or later
 
-if (hmin<80)
+if (hmin<60)
     error('Minimum height must be at least 80 km.');
 end
 if (hmax>150)
@@ -75,7 +75,7 @@ end
                                                   fitdir , hmin , ...
                                                   hmax , tmin , tmax ...
                                                   , exp , radar , ...
-                                                 version , tres , FAdev );
+                                                 version , tres , FAdev, ppReadingFcn);
 
 % collect the model data in an array
 model = NaN(length(h),10,length(ts));

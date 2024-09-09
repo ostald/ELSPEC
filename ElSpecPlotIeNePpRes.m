@@ -244,7 +244,11 @@ datetick('x',13,'keeplimits')
 ylabel('Height [km]')
 cbh4 = colorbar;
 ylabel(cbh4,{'\Delta N_e/\sigma_{n_e}'})
-
+try
+  set(gca,'Colormap',redblue)
+catch
+    % nevermind - it was worth trying...
+end
 
 
 

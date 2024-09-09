@@ -48,6 +48,17 @@ switch lower(type)
   case 'endne'
     ne = ( ne0 + sqrt(q./alpha).*tanh(sqrt(alpha.*q).*dt) ) ...
          ./ ( 1 + sqrt(alpha./q).*ne0.* tanh(sqrt(alpha.*q).*dt));
+    infin = find(~isfinite(ne));
+    if ~isempty(infin)
+      ne(infin) = 1;
+    end
+  case 'neend'
+    ne = ( ne0 + sqrt(q./alpha).*tanh(sqrt(alpha.*q).*dt) ) ...
+         ./ ( 1 + sqrt(alpha./q).*ne0.* tanh(sqrt(alpha.*q).*dt));
+    infin = find(~isfinite(ne));
+    if ~isempty(infin)
+      ne(infin) = 1;
+    end
   case 'integrate'
     ne = ((log( sqrt(q) + sqrt(alpha).*ne0.*tanh(sqrt(alpha.*q).*dt)) - ...
            log(tanh(sqrt(alpha.*q).*dt) + 1) + sqrt(alpha.*q).*dt)./alpha ...

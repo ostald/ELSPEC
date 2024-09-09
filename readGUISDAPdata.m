@@ -2,7 +2,7 @@ function [h,ts,te,pp,ppstd,par,parstd,loc,azel,I] = readGUISDAPdata( ppdir , ...
                                                   fitdir , hmin , ...
                                                   hmax , tmin , tmax ...
                                                   , exp , radar , ...
-                                                      version , tres , FAdev  ...
+                                                      version , tres , FAdev, ppReadingFcn ...
                                                       )
 %
 % Read GUISDAP raw densities (power profiles) and fit results from
@@ -10,7 +10,7 @@ function [h,ts,te,pp,ppstd,par,parstd,loc,azel,I] = readGUISDAPdata( ppdir , ...
 %
 % [h,ts,te,pp,ppstd,par,parstd] =
 %    readGUISDAPdata( ppdir , fitdir , hmin , hmax , tmin , tmax , ...
-%    exp , radar , version , tres , FAdev)
+%    exp , radar , version , tres , FAdev, ppReadingFcn)
 %
 %
 % INPUT:
@@ -27,9 +27,9 @@ function [h,ts,te,pp,ppstd,par,parstd,loc,azel,I] = readGUISDAPdata( ppdir , ...
 %  version EISCAT experiment version number [1,2,3,...]
 %  tres    "type" of time resolution 'best' or 'dump'
 %  FAdev   maximum beam direction deviation from field-aligned  [deg]
-%  azel    azimuth and elevation of the radar beam
-%  I       magnetic inclination angle (deg)
-%
+%  ppReadingFcn - power-profile-reading function. Optional function
+%          handle to function that reads power-profiles from the ppdir.
+%          This function should return: [h,ts,te,pp,ppstd,loc,azel,I]
 %
 % OUTPUT:
 %  h       heights [km]
@@ -39,6 +39,9 @@ function [h,ts,te,pp,ppstd,par,parstd,loc,azel,I] = readGUISDAPdata( ppdir , ...
 %  ppstd   standard deviations of the raw densities [m^-3]
 %  par     lenth(h)x4xlength(ts) array of plasma parameters
 %  parstd  standard deviations of the plasma parameters
+%  loc     location, latitude-longitude-altitude of radar
+%  azel    azimuth and elevation of the radar beam
+%  I       magnetic inclination angle (deg)
 %
 % The four plasma parameters are Ne [m^-3], Ti [K], Te [k], and Vi
 % [ms^-1]. Failed iterations and results with chi-squared larger
@@ -93,10 +96,14 @@ if isempty(ppdir)
     return
 end
 
-% read power profiles
-[hpp,tspp,tepp,pp1,ppstd1,locpp,azelpp,Ipp] = readGUISDAPpp( ppdir , exp , radar , ...
-                                            version , tres , FAdev );
 
+% read power profiles
+if nargin > 11 & isa(ppReadingFcn,'function_handle')
+  [hpp,tspp,tepp,pp1,ppstd1,locpp,azelpp,Ipp] = ppReadingFcn(ppdir);
+else
+  [hpp,tspp,tepp,pp1,ppstd1,locpp,azelpp,Ipp] = readGUISDAPpp( ppdir , exp , radar , ...
+                                              version , tres , FAdev );
+end
 % read fit results
 [hpar,tspar,tepar,par1,parstd1,locpar,azelpar,Ipar] = readGUISDAPpar( fitdir , FAdev );
 
@@ -138,7 +145,7 @@ end
 % azimuth and elevation
 azel = azelpp;
 % magnetic inclination
-I = Ipp;
+I = Ipar; % was: Ipp; /BG-20240906
 
 % now we have data in different grids 
 
@@ -204,10 +211,13 @@ if ~isempty(fitdir)
     par2 = NaN(nh,4,ntpar);
     parstd2 = NaN(nh,4,ntpar);
     for k=1:ntpar
-        ii = ~isnan(hpar(:,k));
+        %ii = ~isnan(hpar(:,k));
+        ii = ~isnan(hpar(:,k)) & ~any(isnan(par1(:,:,k)),2);
+        ii1 = find(ii,1,'first');
+        iiL = find(ii,1,'last');
         % interpolate, some tricks at edges
-        par2(:,:,k) = interp1([0;hpar(ii,k);1e6],[par1(ii(1),:,k);par1(ii,:,k);par1(ii(end),:,k)],h,'linear','extrap');
-        parstd2(:,:,k) = interp1([0;hpar(ii,k);1e6],[parstd1(ii(1),:,k);parstd1(ii,:,k);parstd1(ii(end),:,k)],h,'linear','extrap');
+        par2(:,:,k) = interp1([0;hpar(ii,k);1e6],[par1(ii1,:,k);par1(ii,:,k);par1(iiL,:,k)],h,'linear','extrap');
+        parstd2(:,:,k) = interp1([0;hpar(ii,k);1e6],[parstd1(ii1,:,k);parstd1(ii,:,k);parstd1(iiL,:,k)],h,'linear','extrap');
     end
     for k=1:nh
         for l=1:4

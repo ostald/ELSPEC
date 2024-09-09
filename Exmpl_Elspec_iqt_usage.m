@@ -17,8 +17,10 @@ egrid = logspace(1,5,400);
 % Data directories
 % The paths to the directories with the ionospheric parameters and the
 % power-profiles.
-fitdir = '/media/bgu001/5f5e8978-a828-4fd4-aabf-2032a3fb895b/Data/EISCAT/Analysed/2006-12-12_arc1_4@uhf';
-ppdir = '/media/bgu001/5f5e8978-a828-4fd4-aabf-2032a3fb895b/Data/EISCAT/tmp-ionlines/2006-12-12_arc1_4@uhf-pp';
+fitdirUM = '/media/bgu001/5f5e8978-a828-4fd4-aabf-2032a3fb895b/Data/EISCAT/Analysed/2006-12-12_arc1_4@uhf';
+fitdir = '/mnt/data/bjorn/EISCAT/Analysed/2006-12-12_arc1_4@uhf';
+ppdirUM = '/media/bgu001/5f5e8978-a828-4fd4-aabf-2032a3fb895b/Data/EISCAT/tmp-ionlines/2006-12-12_arc1_4@uhf-pp';
+ppdir = '/mnt/data/bjorn/EISCAT/Analysed/2006-12-12_arc1_4@uhf-pp';
 % Flag for specifying which EISCAT-experiment it is
 experiment = 'arc1';
 % Altitude-limits.
@@ -88,7 +90,7 @@ for i1 = numel(OUTLIERS):-1:1
                                        'Outfilename',Outname);
   ElSpecPlot(ElSpecQT_Outliers_L5{i1})
   [fnm1,fnm2,fnm3] = fileparts(ElSpecQT_Outliers_L5{i1}.Outfilename); 
-  print('-depsc2','-painters',[fnm2,'-QT-l-5']);
+  print('-depsc','-vector',[fnm2,'-QT-l-5']);
   dstr = sprintf('Done with loop S i1: %i at %s',i1,datestr(now,'HH:MM:SS'));
   disp(dstr)
   close(gcf)
@@ -116,7 +118,7 @@ for i1 = numel(OUTLIERS):-1:1
                                        'Outfilename',Outname);
   ElSpecPlot(ElSpecQT_iqtOutliers_L5{i1})
   [fnm1,fnm2,fnm3] = fileparts(ElSpecQT_iqtOutliers_L5{i1}.Outfilename) ;
-  print('-depsc2','-painters',[fnm2,'-IQT-l-5']);
+  print('-depsc','-vector',[fnm2,'-IQT-l-5']);
   dstr = sprintf('Done with loop S i1: %i at %s',i1,datestr(now,'HH:MM:SS'));
   disp(dstr)
   close(gcf)

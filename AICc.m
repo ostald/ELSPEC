@@ -35,7 +35,11 @@ end
 if nargin > 5 && type == 't'
   ss = sum( 2*width^2*tanh(( m - y ).^2 ./ (v*width^2*2) ),'all' ) + 2*k + 2*k*(k+1)/(n-k-1);
 elseif nargin > 5 && type == 'l'
-  ss = sum( 2*width^2*log(1/2*( m - y ).^2 ./ v  + width^2 ) - 2*width^2*log(width^2),'all') + 2*k + 2*k*(k+1)/(n-k-1);
+  try
+    ss = sum( 2*width^2*log(1/2*( m - y ).^2 ./ v  + width^2 ) - 2*width^2*log(width^2),'all') + 2*k + 2*k*(k+1)/(n-k-1);
+  catch
+      keyboard
+  end
 else
   ss = ( sum( ( m - y ).^2 ./ v ,'all') ) + 2*k + 2*k*(k+1)/(n-k-1);
 end

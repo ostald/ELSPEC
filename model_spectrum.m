@@ -18,12 +18,20 @@ function s = model_spectrum(X0,E,S_type)
 % 
 % Copyright I Virtanen <ilkka.i.virtanen@oulu.fi> and B Gustavsson <bjorn.gustavsson@uit.no>
 % This is free software, licensed under GNU GPL version 2 or later
-
+  persistent Epowers
+  if isempty(Epowers) || size(Epowers,1) < numel(X0) % || ~( numel(E)==size(Epowers,1) )
+    Epowers = ones(size(E));
+    for k = (size(Epowers,1)+1):numel(X0)
+      Epowers(k,:) = (E/1e4).^(k-1);
+    end
+  end
 % create the polynomial
   if nargin < 3 || strcmp(lower(S_type),'p')
     p = E.*0;
+    %p0 = E.*0;
     for k=1:length(X0)
-      p = p + X0(k).*(E/1e4).^(k-1);
+      % p0 = p0 + X0(k).*(E/1e4).^(k-1);
+      p = p + X0(k).*Epowers(k,:);
     end
     
     s = E.*exp( p );
