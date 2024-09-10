@@ -130,7 +130,7 @@ set(cbh4,'fontsize',12)
 
 set(h4,'fontsize',12)
 
-set(h4,'layer','top','colormap',redblue)
+set(h4,'layer','top','colormap',redbluecmap)
 
 drawnow
 

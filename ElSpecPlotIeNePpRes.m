@@ -308,7 +308,7 @@ set(h1,'layer','top')
 set(cbh1,'LineWidth',1,'TickDir','both')
 set(h2,'layer','top')
 set(h3,'layer','top')
-set(h4,'layer','top','colormap',redblue)
+set(h4,'layer','top','colormap',redbluecmap)
 
 tstr1 = datestr(datenum(datetime((ElSpecOut.te(1)),'ConvertFrom', ...
                                  'posixtime')),29);
