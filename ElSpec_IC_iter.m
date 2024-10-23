@@ -1,4 +1,4 @@
-function ElSpec_IC_iter(iter, log_dir, ppdir)
+function ElSpec_IC_iter(iter, log_dir, ppdir, fitdir)
 %% ElSpec extended with Ion Chemitry
 %% Based on Example-script for ElSpec_iqt usage
 % This script should be possible to adapt for anyone with basic skills in
@@ -22,12 +22,12 @@ egrid = logspace(1,5,200);
 % power-profiles.
 %fitdirUM = '/media/bgu001/5f5e8978-a828-4fd4-aabf-2032a3fb895b/Data/EISCAT/Analysed/2006-12-12_arc1_4@uhf';
 %fitdir = '/mnt/data/bjorn/EISCAT/Analysed/2006-12-12_arc1_4@uhf';
-fitdir = '../Data/Eiscat/fit';
+%fitdir = '../Data/Eiscat/fit';
 %fitdir = ppdir
-%ppdir = strcat(ppdir, '-pp')
+%fitdir = strcat(ppdir, '-pp')
 %ppdirUM = '/media/bgu001/5f5e8978-a828-4fd4-aabf-2032a3fb895b/Data/EISCAT/tmp-ionlines/2006-12-12_arc1_4@uhf-pp';
 %ppdir = '/mnt/data/bjorn/EISCAT/Analysed/2006-12-12_arc1_4@uhf-pp';
-ppdir = '../Data/Eiscat/pp';
+%ppdir = '../Data/Eiscat/pp';
 % Flag for specifying which EISCAT-experiment it is
 experiment = 'arc1';
 % Altitude-limits.
@@ -38,7 +38,7 @@ hmin = 95;
 %etime = [2012, 12, 11, 21, 55, 0];
 
 btime = [ 2006 12 12 19 30 0];
-etime = [ 2006 12 12 22 00 0];
+etime = [ 2006 12 12 19 35 0];
 % Selection of which ionisation-profile method to use
 ionomodel = 'Sergienko';
 recombmodel = ['SheehanGr'];
@@ -82,7 +82,7 @@ if iter > 0
     icdata = load(icdir);
     customIRI = icdata.elspec_iri_sorted;
     customAlpha = icdata.eff_rr;
-    neinit = false
+    neinit = false;
 
     elspec_m1 = fullfile(log_dir,["ElSpec-iqt_IC_" + j + ".mat"]);
     nsteps_old = load(elspec_m1).ElSpecOut.nSteps;
@@ -97,7 +97,7 @@ Outname = fullfile(log_dir, ["ElSpec-iqt_IC_" + iter]);
 disp(Outname)
 
 
-ElSpecQT_iqtOutliers_L5 = ElSpec_iqt_ic('fitdir',fitdir,...
+ElSpecOut = ElSpec_iqt('fitdir',fitdir,...
                                        'ppdir',ppdir,...
                                        'experiment',experiment,...
                                        'hmax',hmax,'hmin',hmin,...
@@ -117,8 +117,8 @@ ElSpecQT_iqtOutliers_L5 = ElSpec_iqt_ic('fitdir',fitdir,...
 
 
 
-ElSpecPlot(ElSpecQT_iqtOutliers_L5, ieelim = [10, 14], faclim = [0, 10], plim = [0, 60]);
-[fnm1,fnm2,fnm3] = fileparts(ElSpecQT_iqtOutliers_L5.Outfilename) ;
+ElSpecPlot(ElSpecOut, ieelim = [10, 14], faclim = [0, 10], plim = [0, 60]);
+[fnm1,fnm2,fnm3] = fileparts(ElSpecOut.Outfilename) ;
 disp(sprintf(datestr(now,'HH:MM:SS')+ " Calculations done, starting figures"))
 % print('-dpng',[Outname]);
 % disp(sprintf(datestr(now,'HH:MM:SS')+ " PNG figure done"))
