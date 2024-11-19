@@ -80,7 +80,9 @@ end
 
 %
 % local field-aligned direction in E region
-[~,~, D, I,~,~,~,~,~,~] = igrfmagm(110000, loc(1), loc(2), decyear(datetime(mean(ts,'omitnan'),'convertfrom','posixtime')));
+%[~,~, D, I,~,~,~,~,~,~] = igrfmagm(110000, loc(1), loc(2), decyear(datetime(mean(ts,'omitnan'),'convertfrom','posixtime')));
+%changing year to pre 2020:
+[~,~, D, I,~,~,~,~,~,~] = igrfmagm(110000, loc(1), loc(2), decyear(datetime(mean(ts,'omitnan'),'convertfrom','posixtime'))- 3);
 FAele = abs(I);
 FAaz = D+180;
 if I<0
@@ -208,7 +210,7 @@ for k = 1:length(ff)
         azel((k-1)*nppdump+1,:) = [r_az r_el];
         for kpp=2:nppdump
             h( : , (k-1)*nppdump+kpp ) = h( : , (k-1)*nppdump+1 );
-            azel((k-1)*nppdump+kpp) = [r_az r_el];
+            azel((k-1)*nppdump+kpp, :) = [r_az r_el];
         end
     end
 

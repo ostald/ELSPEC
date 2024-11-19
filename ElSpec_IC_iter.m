@@ -23,18 +23,19 @@ egrid = logspace(1,5,400);
 % power-profiles.
 %fitdirUM = '/media/bgu001/5f5e8978-a828-4fd4-aabf-2032a3fb895b/Data/EISCAT/Analysed/2006-12-12_arc1_4@uhf';
 %fitdir = '/mnt/data/bjorn/EISCAT/Analysed/2006-12-12_arc1_4@uhf';
-fitdir = '../Data/Eiscat/fit';
+fitdir = ppdir 
+%fitdir = '../Data/Eiscat/fit';
 %ppdirUM = '/media/bgu001/5f5e8978-a828-4fd4-aabf-2032a3fb895b/Data/EISCAT/tmp-ionlines/2006-12-12_arc1_4@uhf-pp';
 %ppdir = '/mnt/data/bjorn/EISCAT/Analysed/2006-12-12_arc1_4@uhf-pp';
 %ppdir = '../Data/Eiscat/pp';
 % Flag for specifying which EISCAT-experiment it is
-experiment = 'arc1';
+experiment = 'beata';
 % Altitude-limits.
 hmax = 150;
 hmin = 95;
 % Time-limits
-btime = [2006, 12, 12, 19, 30, 0];
-etime = [2006, 12, 12, 20, 35, 0];
+btime = [2022, 11, 02, 15, 00, 0];
+etime = [2022, 11, 02, 18, 00, 0];
 % Selection of which ionisation-profile method to use
 ionomodel = 'Sergienko';
 %recombmodel = 'SheehanGrFlipchem';
@@ -58,7 +59,7 @@ ninteg = 20;
     %                12 21 123 124 10;
     %                12 21 421 422 10];
     % OUTLIERS{2} = [12 21 91 92 10;
-    %                12 21 123 124 30;
+        %                12 21 123 124 30;
     %                12 21 421 422 30];
     % OUTLIERS{3} = [12 13 91 92 30;
     %                12 51 123 124 10;
@@ -95,7 +96,7 @@ ErrType = 'l'; % L for Lorentzian.
 %                                        'ninteg',ninteg,...
 %                                        'Outliers',Outliers,...
 %                                        'Outfilename',Outname);
-%   ElSpecPlot(ElSpecQT_Outliers_L5{i1})
+%   ElSpecPlot(ElSpecQT_Out
 %   [fnm1,fnm2,fnm3] = fileparts(ElSpecQT_Outliers_L5{i1}.Outfilename); 
 %   print('-depsc','-vector',[fnm2,'-QT-l-5']);
 %   dstr = sprintf('Done with loop S i1: %i at %s',i1,datestr(now,'HH:MM:SS'));
@@ -208,7 +209,7 @@ ElSpecQT_iqtOutliers_L5 = ElSpec_iqt_ic('fitdir',fitdir,...
 %                                        'alpha_eff', alpha_eff, ...
 %                                        'iteration', iter, ...
 %                                        'ne_init', ne_init);
-ElSpecPlot(ElSpecQT_iqtOutliers_L5, ieelim = [10, 14], faclim = [0, 10], plim = [0, 60]);
+%ElSpecPlot(ElSpecQT_iqtOutliers_L5, ieelim = [10, 14], faclim = [0, 10], plim = [0, 60]);
 [fnm1,fnm2,fnm3] = fileparts(ElSpecQT_iqtOutliers_L5.Outfilename) ;
 print('-depsc','-vector',[Outname]);
 print('-dpdf', '-painters', [Outname]);
