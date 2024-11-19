@@ -1,10 +1,27 @@
-function ElSpec_IC_iter(iter, log_dir, ppdir, fitdir)
+function ElSpec_IC_iter(iter, log_dir, ppdir, fitdir, btime, etime, experiment)
 %% ElSpec extended with Ion Chemitry
 %% Based on Example-script for ElSpec_iqt usage
 % This script should be possible to adapt for anyone with basic skills in
 % matlab-usage. This test runs the ElSpec_iqt and ElSpec_qt functions
 % testing the outlier-resilience with Pearson-type 6 statistics for the
 % electron-density-estimates
+
+%{
+ppdir = "/Users/ost051/Documents/PhD/Data/2006-12-12_arc1_4@uhf-pp";
+fitdir = "/Users/ost051/Documents/PhD/Data/2006-12-12_arc1_4@uhf";
+resdir = "/Users/ost051/Documents/PhD/Results/damped_osc_fixed";
+elspecdir = "/Users/ost051/Documents/PhD/ELSPEC";
+
+ppdir = "/mnt/data/bjorn/EISCAT/Analysed/2006-12-12_arc1_4@uhf-pp";
+fitdir = "/mnt/data/bjorn/EISCAT/Analysed/2006-12-12_arc1_4@uhf";
+resdir = "/home/oliver/Documents/Results/testing";
+elspecdir = "/home/oliver/Documents/ELSPEC";
+
+btime = [2006, 12, 12, 19, 30, 0];
+etime = [2006, 12, 12, 19, 35, 0];
+
+experiment = "arc1"
+%}
 
 %% 1, Setting up the matlab-path
 % Simply modify the path below to point to the directory where ELSPEC-2022
@@ -29,7 +46,7 @@ egrid = logspace(1,5,200);
 %ppdir = '/mnt/data/bjorn/EISCAT/Analysed/2006-12-12_arc1_4@uhf-pp';
 %ppdir = '../Data/Eiscat/pp';
 % Flag for specifying which EISCAT-experiment it is
-experiment = 'arc1';
+%experiment = 'arc1';
 % Altitude-limits.
 hmax = 150;
 hmin = 95;
@@ -37,8 +54,8 @@ hmin = 95;
 %btime = [2012, 12, 11, 20, 00, 0];
 %etime = [2012, 12, 11, 21, 55, 0];
 
-btime = [ 2006 12 12 19 30 0];
-etime = [ 2006 12 12 19 35 0];
+%btime = [ 2006 12 12 19 30 0];
+%etime = [ 2006 12 12 19 35 0];
 % Selection of which ionisation-profile method to use
 ionomodel = 'Sergienko';
 recombmodel = ['SheehanGr'];

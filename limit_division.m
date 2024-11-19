@@ -1,4 +1,4 @@
-function division_penalty = limit_division2(iter)
+function division_penalty = limit_division(iter)
 
 if iter < 3
     division_penalty = 0;
@@ -21,8 +21,8 @@ else
     fluc(isnan(fluc)) = 0;
     
     %crit = sum(fluc, 1)/size(fluc, 1)
-    division_penalty = (sum(fluc, 1)/size(fluc, 1)) .* 100;
-    division_penalty = (division_penalty + 2*nstepmin) / 3
+    division_penalty = (sum(fluc, 1)/size(fluc, 1)) .* 150;
+    division_penalty = (division_penalty + 3*nstepmin) / 4
 
     
     %nstepmin = min(min(hist_nsteps{1}, hist_nsteps{2}), hist_nsteps{3});
