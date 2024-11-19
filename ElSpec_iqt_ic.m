@@ -51,6 +51,7 @@ function ElSpecOut = ElSpec_iqt_ic(varargin)
 %  ninteg       number of ne-profiles to use in each integration
 %               period, default 6
 %  nstep        number of ne-slices in each time-step, default 1
+%  nstepmin     minimum number of ne-slices in each time-step, default 1
 %  saveiecov    logical, should the large covariance matrices of
 %               the flux estimates be saved? default false.
 %  customIRI    define custom IRI model, matrix has to match height and
@@ -240,6 +241,10 @@ checkNinteg = @(x) (isnumeric(x) & length(x)==1 & all(x>0));
 defaultNstep = 1;
 checkNstep = @(x) (isnumeric(x) & length(x)==1 & all(x>0));
 
+% number of time-slices to proceed on each time-step
+defaultNstepmin = 1;
+checkNstepmin = @(x) (isnumeric(x) & all(x>0));
+
 % save the  large flux covariance matrix?
 defaultSaveiecov = false;
 checkSaveiecov = @(x) ((isnumeric(x)|islogial(x))&length(x)==1);
@@ -345,6 +350,7 @@ if exist('inputParser') %#ok<EXIST>
   addParameter(p,'stdprior',defaultStdprior,checkStdprior);
   addParameter(p,'ninteg',defaultNinteg,checkNinteg);
   addParameter(p,'nstep',defaultNstep,checkNstep);
+  addParameter(p,'nstepmin',defaultNstepmin,checkNstepmin);
   addParameter(p,'saveiecov',defaultSaveiecov,checkSaveiecov);
 %   addParameter(p,'Tdir',defaultTdir,checkTdir);
   addParameter(p,'fadev',defaultFAdev,checkFAdev);
@@ -393,6 +399,7 @@ else
   def_pars.stdprior = defaultStdprior;
   def_pars.ninteg = defaultNinteg;
   def_pars.nstep = defaultNstep;
+  def_pars.nstepmin = defaultNstepmin;
   def_pars.saveiecov = defaultSaveiecov;
   
   %def_pars.Tdir = defaultTdir;
@@ -410,6 +417,7 @@ else
 
   out = parse_pv_pairs(def_pars,varargin);
   out.E = out.egrid;
+  out.nstepmin = nstepmin
   
 end
 % check that we have either ppdir or fitdir, or both
@@ -847,6 +855,7 @@ while iStart < numel(dt)
                                                     ieprior,...
                                                     stdprior,...
                                                     Ie0(:,end),...
+                                                    nstepmin(iStart:iEnd),... 
                                                     out);
   % disp(['returned from recurse_AICfit, nt: ',num2str(numel(cnSteps))])
   ne0 = cneEnd(:,end);
@@ -1033,7 +1042,7 @@ catch
 end
 end
 
-function [ne,neEnd,Ie,polycoefs,best_order,n_params,exitflag,nSteps,idx_out] = recurse_AICfit(ne,neEnd,pp,ppstd,alpha,dt,ne00,A,polycoefs,best_order,n_params,Ie,idx_in,exitflag,ieprior,stdprior,Ie0,Directives)
+function [ne,neEnd,Ie,polycoefs,best_order,n_params,exitflag,nSteps,idx_out] = recurse_AICfit(ne,neEnd,pp,ppstd,alpha,dt,ne00,A,polycoefs,best_order,n_params,Ie,idx_in,exitflag,ieprior,stdprior,Ie0,nstepmin,Directives)
 %                                                                                                                        ne00 a priori electron density
 % RECURSE_AICFIT - maybe better to scrap AICFull in the outputs.
 %   
