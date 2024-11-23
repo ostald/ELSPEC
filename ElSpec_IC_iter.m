@@ -113,7 +113,7 @@ end
 Outname = fullfile(log_dir, ["ElSpec-iqt_IC_" + iter]);
 disp(Outname)
 
-nstepmin = limit_division(iter);
+nstepmin = limit_division(log_dir, iter);
 
 ElSpecOut = ElSpec_iqt('fitdir',fitdir,...
                                        'ppdir',ppdir,...
@@ -139,11 +139,11 @@ ElSpecOut = ElSpec_iqt('fitdir',fitdir,...
 ElSpecPlot(ElSpecOut, ieelim = [10, 14], faclim = [0, 10], plim = [0, 60]);
 [fnm1,fnm2,fnm3] = fileparts(ElSpecOut.Outfilename) ;
 disp(sprintf(datestr(now,'HH:MM:SS')+ " Calculations done, starting figures"))
-% print('-dpng',[Outname]);
+print('-dpng',[Outname]);
 % disp(sprintf(datestr(now,'HH:MM:SS')+ " PNG figure done"))
-% print('-depsc','-vector',[Outname]);
+%print('-depsc','-vector',[Outname]);
 % disp(sprintf(datestr(now,'HH:MM:SS')+ " EPS figure done"))
-print('-dpdf', '-painters', [Outname]);
+%print('-dpdf', '-painters', [Outname]);
 disp(sprintf(datestr(now,'HH:MM:SS')+ " PDF figure done"))
 dstr = sprintf('Done with loop S i1: 0 at %s',datestr(now,'HH:MM:SS'));
 disp(dstr)

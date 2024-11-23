@@ -1,10 +1,10 @@
-function division_penalty = limit_division(iter)
+function division_penalty = limit_division(dir, iter)
 
-if iter < 3
+if iter <= 3
     division_penalty = 0;
 else
     for i = 1:3
-        res = load("/Users/ost051/Documents/PhD/Results/damped_osc/ElSpec-iqt_IC_"+ string(iter-3+i) +".mat");
+        res = load(fullfile(dir,["ElSpec-iqt_IC_" + string(iter-3+i) + ".mat"]));
         hist_ie{i} = res.ElSpecOut.q;
         hist_nsteps{i} = res.ElSpecOut.nSteps;
         dE = res.ElSpecOut.dE;
