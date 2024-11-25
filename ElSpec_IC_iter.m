@@ -113,7 +113,7 @@ end
 Outname = fullfile(log_dir, ["ElSpec-iqt_IC_" + iter]);
 disp(Outname)
 
-nstepmin = limit_division(log_dir, iter);
+nstepmin = limit_division(log_dir, iter-1);
 
 ElSpecOut = ElSpec_iqt('fitdir',fitdir,...
                                        'ppdir',ppdir,...
