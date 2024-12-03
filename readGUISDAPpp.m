@@ -206,7 +206,7 @@ for k = 1:length(ff)
         azel((k-1)*nppdump+1,:) = [r_az r_el];
         for kpp=2:nppdump
             h( : , (k-1)*nppdump+kpp ) = h( : , (k-1)*nppdump+1 );
-            azel((k-1)*nppdump+kpp, :) = [r_az r_el];
+            azel((k-1)*nppdump+kpp) = [r_az r_el];
         end
     end
 
