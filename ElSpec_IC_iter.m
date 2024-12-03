@@ -32,7 +32,7 @@ experiment = "arc1"
 %% 2 Setup of parameters controlling ELSPEC
 
 % Energy grid - between 10 ad 100 keV in 400 logarithmic/exponential steps
-egrid = logspace(1,5,200);
+egrid = logspace(1,5.5,200);
 
 % Data directories
 % The paths to the directories with the ionospheric parameters and the
@@ -49,7 +49,7 @@ egrid = logspace(1,5,200);
 %experiment = 'arc1';
 % Altitude-limits.
 hmax = 150;
-hmin = 95;
+hmin = 60;
 % Time-limits
 %btime = [2012, 12, 11, 20, 00, 0];
 %etime = [2012, 12, 11, 21, 55, 0];
@@ -136,7 +136,7 @@ ElSpecOut = ElSpec_iqt('fitdir',fitdir,...
 
 
 
-ElSpecPlot(ElSpecOut, ieelim = [10, 14], faclim = [0, 10], plim = [0, 60]);
+ElSpecPlot(ElSpecOut, elim = [1, 500], ieelim = [10, 14], faclim = [0, 10], plim = [0, 60]);
 [fnm1,fnm2,fnm3] = fileparts(ElSpecOut.Outfilename) ;
 disp(sprintf(datestr(now,'HH:MM:SS')+ " Calculations done, starting figures"))
 print('-dpng',[Outname]);
