@@ -6,11 +6,11 @@ else
     for i = 1:3
         res = load(fullfile(dir,["ElSpec-iqt_IC_" + string(iter-3+i) + ".mat"]));
         hist_ie{i} = res.ElSpecOut.q;
-        hist_nsteps{i} = res.ElSpecOut.nSteps;
+        hist_div_penalty{i} = res.ElSpecOut.div_penalty;
         dE = res.ElSpecOut.dE;
         ts = res.ElSpecOut.ts;
         if i == 3
-            nstepmin = res.ElSpecOut.nstepmin;
+            div_penalty_last = res.ElSpecOut.div_penalty;
             disp(fullfile(dir,["ElSpec-iqt_IC_" + string(iter-3+i) + ".mat"]))
         end
         %hist_ie{i} = hist_ie{i} .* repmat(dE', [1, numel(ts)])
@@ -23,7 +23,7 @@ else
     
     %crit = sum(fluc, 1)/size(fluc, 1)
     division_penalty = (sum(fluc, 1)/size(fluc, 1)) .* 150;
-    division_penalty = (division_penalty + 2*nstepmin) / 3;
+    division_penalty = (division_penalty + 2*div_penalty_last) / 3;
 
     
     %nstepmin = min(min(hist_nsteps{1}, hist_nsteps{2}), hist_nsteps{3});

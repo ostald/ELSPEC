@@ -54,8 +54,17 @@ function ElSpecOut = ElSpec_iqtcl(varargin)
 %  ninteg       number of ne-profiles to use in each integration
 %               period, default 6
 %  nstep        number of ne-slices in each time-step, default 1
+%  div_penalty  penalty term to limit subdivision, to avoid oscillating
+%               behaviour, default 0
 %  saveiecov    logical, should the large covariance matrices of
 %               the flux estimates be saved? default false.
+%  customIRI    define custom IRI model, matrix has to match height and
+%               time resolution (or set to false to invoke IRI model)
+%  customAlpha  define custom effective recombination rates
+%               matrix has to match height and time resolution (or set to
+%               false to calculate alpha from IRI model)
+%  neinit      initial electron density          
+
 %
 % OUTPUT:
 %  ElSpecOut    A MATLAB structure with fields:...
@@ -189,7 +198,8 @@ checkIonomodel = @(x) any(validatestring(x,validIonomodel));
 defaultRecombmodel = 'SheehanGr';
 validRecombmodel = {'SheehanGr','SheehanEx','Rees','ReesO2+', ...
                     'ReesN2+','ReesNO+','SheehanGrO2+', ...
-                    'SheehanGrN2+','SheehanGrNO+','delPozo1','delPozo2'};
+                    'SheehanGrN2+','SheehanGrNO+','delPozo1','delPozo2', ...
+                    'SheehanGrFlipchem'};
 checkRecombmodel = @(x) any(validatestring(x,validRecombmodel));
 
 % type of integration
@@ -235,6 +245,10 @@ checkNinteg = @(x) (isnumeric(x) & length(x)==1 & all(x>0));
 % number of time-slices to proceed on each time-step
 defaultNstep = 1;
 checkNstep = @(x) (isnumeric(x) & length(x)==1 & all(x>0));
+
+% number of time-slices to proceed on each time-step
+defaultDiv_penalty = 0;
+checkDiv_penalty = @(x) (isnumeric(x));
 
 % number of time-slices to proceed on each time-step
 defaultNchunk = 128;
@@ -284,7 +298,7 @@ defaultErrWidth = 3;
 checktErrWidth = @(x) (length(x)==1 & all(x>=1));
 
 % Outlier-settings
-defaultOutliers = ones(1,5);
+defaultOutliers = nan; %ones(1,5); no artificial outliers OS 17.09.24
 checkOutliers = @(x) (all(isnumeric(x)) & size(x,2)==5 & size(x,1)>=1 & all(x(:)>0));
 
 % Outfilename-settings
@@ -306,6 +320,18 @@ checkInterpSpec = @(x) ((numel(x) == 1) & isnumeric(x) & ...
 % use only field-aligned data?
 defaultFAdev = 3;
 checkFAdev = @(x) (isnumeric(x)&length(x)==1);
+
+% custom densities
+defaultCustomIRI = false;
+checkCustomIRI = @(x) (ndims(x) == 3 || x == false);
+
+% custom recombintaion rates
+defaultCustomAlpha = false;
+checkCustomAlpha = @(x) (ismatrix(x) || x == false);
+
+% defined initial electron density
+default_neinit = false;
+check_neinit = @(x) ((isvector(x) & all(x>0)) || x==false);
 
 % use special power-profile-reading-function?
 defaultppReadingFcn = [];
@@ -336,6 +362,7 @@ if exist('inputParser') %#ok<EXIST>
   addParameter(p,'stdprior',defaultStdprior,checkStdprior);
   addParameter(p,'ninteg',defaultNinteg,checkNinteg);
   addParameter(p,'nstep',defaultNstep,checkNstep);
+  addParameter(p,'div_penalty',defaultDiv_penalty,checkDiv_penalty);
   addParameter(p,'nchunk',defaultNchunk,checkNchunk);
   addParameter(p,'doiecov',defaultDoiecov,checkDoiecov);
   addParameter(p,'saveiecov',defaultSaveiecov,checkSaveiecov);
@@ -349,6 +376,10 @@ if exist('inputParser') %#ok<EXIST>
   addParameter(p,'Ietype',defaultIetype,checkIetype);
   addParameter(p,'InterpSpec',defaultInterpSpec,checkInterpSpec);
   addParameter(p,'ppReadingFcn',defaultppReadingFcn,checkPPReadingFcn);
+  addParameter(p,'customAlpha',defaultCustomAlpha,checkCustomAlpha);
+  addParameter(p,'customIRI',defaultCustomIRI,checkCustomIRI);
+  addParameter(p,'neinit',default_neinit,check_neinit);
+
   parse(p,varargin{:})
   
   %out = struct;
@@ -380,6 +411,7 @@ else
   def_pars.stdprior = defaultStdprior;
   def_pars.ninteg = defaultNinteg;
   def_pars.nstep = defaultNstep;
+  def_pars.div_penalty = defaultDiv_penalty;
   def_pars.nchunk = defaultNchunk;
   def_pars.doiecov = defaultDoiecov;
   def_pars.saveiecov = defaultSaveiecov;
@@ -388,13 +420,20 @@ else
   def_pars.ErrType = defaultErrType;
   def_pars.ErrWidth = defaultErrWidth;
   def_pars.Outliers = defaultOutliers;
-  def_pars.Outliers = defaultOutliers;
+  def_pars.Outfilename = defaultOutfilename;
   def_pars.Ietype = defaultIetype;
   def_pars.InterpSpec = defaultInterpSpec;
   def_pars.ppReadingFcn = defaultppReadingFcn;
   
+  def_pars.customIRI = defaultCustomIRI;
+  def_pars.customAlpha = defaultCustomAlpha;
+  def_pars.neinit = default_neinit
+                    
+
   out = parse_pv_pairs(def_pars,varargin);
   out.E = out.egrid;
+  out.div_penalty = div_penalty;
+
   
 end
 % check that we have either ppdir or fitdir, or both
@@ -487,7 +526,7 @@ else
                      out.version , out.tres , readIRI, p.Results.fadev , p.Results.bottomstdfail, ...
 		     p.Results.ppReadingFcn);
     if strcmp(out.recombmodel,'SheehanGrFlipchem')
-    out.iri = calculateFlipchemComposition(out.ts,out.h,out.par,out.pp,out.loc,out.iri);
+        out.iri = calculateFlipchemComposition(out.ts,out.h,out.par,out.pp,out.loc,out.iri);
     end
     % warn about the ESR compositions
     if strcmp(p.Results.radar,'esr')
@@ -501,8 +540,24 @@ else
         end
     end
 
+    if any(out.customIRI)% ~= false 
+        %replace IRI model
+        if size(out.customIRI) ~= size(out.iri)
+            error('Size of custom IRI composition does not match')
+        end
+        out.iri = out.customIRI;
+    end
 
 end
+
+%figure
+%pcolor(out.ts, out.h, squeeze(out.iri(:, 3, :)))
+
+% if all(out.par(:, 3, :) == repmat(squeeze(out.par(:, 3, 1)), 1, max(size(out.par(1, 3, :)))), 'all')
+%     error("No Time variation in electron temperature.")
+% end
+
+
 % nt = 2^floor(log2(numel(out.ts)));
 nt = numel(out.ts); % 128*floor(numel(out.ts)/128); 
 % Change above since there is no FFT-type reason to stick to powers
@@ -577,8 +632,9 @@ out.AICc = NaN(out.maxorder,nt); % an array for the information
 
 out.IeCov = NaN(nE,nE,nt);   % Covariances of flux estimates
 out.IeStd = NaN(nE,nt); % standard deviation of flux estimates
-out.alpha = NaN(nh,nt); % an array for the effective recombination
-                        % rates
+%out.alpha = NaN(nh,nt); % an array for the effective recombination
+%                        % rates
+
 out.q = NaN(nh,nt); % an array for ion production rates
 out.polycoefs = cell(out.maxorder,nt);
 out.polycoefsCovar = NaN(out.maxorder,out.maxorder+1,out.maxorder+1,nt);
@@ -589,6 +645,11 @@ out.FAC = NaN(1,nt);
 out.FACstd = NaN(1,nt);
 out.Pe = NaN(1,nt);
 out.PeStd = NaN(1,nt);
+
+if numel(out.div_penalty) == 1
+    out.div_penalty = out.div_penalty.*zeros(1, numel(out.ts));
+end
+
 
 % options for the MATLAB fit routines
 fms_opts = optimset('lsqnonlin');
@@ -637,15 +698,30 @@ A(isnan(A)) = 0;
 
 % update the effective recombination coefficient. Assume N2+
 % density to be zero
-for it = 1:numel(out.ts)
-  out.alpha(:,it) = effective_recombination_coefficient(out.h, ...
+% if out.customAlpha ~= false
+if any(out.customAlpha)% ~= false
+    if ~all(size(out.customAlpha) == [length(out.h), length(out.ts)])
+        disp(size(out.customAlpha))
+        disp([length(out.h), length(out.ts)])
+        error('Size of Custom Alpha matrix does not match height and time resolution')
+    end
+    out.alpha = out.customAlpha; 
+else
+    for it = 1:numel(out.ts)
+      out.alpha(:,it) = effective_recombination_coefficient(out.h, ...
                                                     out.par(:,3,it), ...
                                                     out.iri(:,9,it), ...
                                                     out.iri(:,9,it).*0, ...
                                                     out.iri(:,8,it), ...
                                                     out.recombmodel );
+    end
 end
-
+for it = 1:numel(out.ts)
+    if any(~isreal(out.alpha(:, it)))
+        disp(it)
+        error("Imaginary alpha detected, are there negative temperatures?")
+    end
+end
 
 % save interval is 100 step, independently from the time resolution
 ndtsave = 20;%ceil(mean(120./out.dt));
@@ -690,7 +766,30 @@ stdprior = out.stdprior;
                                                   [],...
                                                   [],... % Ie(t) constant
                                                   Directives);
-ne0 = sqrt(A*(Ie1(:,1).*out.dE')./alpha(:,1));% neEnd(:,end);
+
+% figure
+% hold on
+% plot(ne0, out.h)
+% legend('ne0')
+% drawnow()
+
+% replace ne with value from IC 
+% removed 05.04.23 bc neinit is based on old q, new alpha
+%       assuming steady state (both the case here and with 30min time
+%       window in IC), ne = sqrt(q/alpha) => newly fittet q is better
+%r eintroduced 13,11,23 for chopping evaluation into 15 min intervalls
+
+%if out.neinit ~= false
+if any(out.neinit)% ~= false
+    ne0 = out.neinit';
+    out.ne0 = ne0;
+else
+    ne0 = sqrt(A*(Ie1(:,1).*out.dE')./alpha(:,1));% neEnd(:,end);
+end
+
+out.ne0 = ne0;
+out.q0 = A*(Ie1(:,1).*out.dE');
+
 Ie0 = Ie1;
 % $$$ [AICc1,polycoefs1,best_order1,n_params1,ne1,neEnd1,Ie1] = AICcFitParSeq(pp(:,1:Directives.ninteg),...
 % $$$                                      ppstd(:,1:Directives.ninteg),...
@@ -762,6 +861,7 @@ while iStart < numel(dt)
                                                     ieprior,...
                                                     stdprior,...
                                                     Ie0(:,end),...
+                                                    out.div_penalty(iStart:iEnd),... 
                                                     out);
   % disp(['returned from recurse_AICfit, nt: ',num2str(numel(cnSteps))])
   ne0 = cneEnd(:,end);
@@ -934,13 +1034,13 @@ if  ~(out.saveiecov)
 end
 ElSpecOut = out;
 try
-  save(outfilename,'ElSpecOut')
+  save(outfilename,'ElSpecOut', "-v7.3")
 catch
   disp(['Failed to save ElSpecOut into file:',outfilename])
 end
 end
 
-function [ne,neEnd,Ie,polycoefs,best_order,n_params,exitflag,nSteps,idx_out] = recurse_AICfit(ne,neEnd,pp,ppstd,alpha,dt,ne00,A,polycoefs,best_order,n_params,Ie,idx_in,exitflag,ieprior,stdprior,Ie0,Directives)
+function [ne,neEnd,Ie,polycoefs,best_order,n_params,exitflag,nSteps,idx_out] = recurse_AICfit(ne,neEnd,pp,ppstd,alpha,dt,ne00,A,polycoefs,best_order,n_params,Ie,idx_in,exitflag,ieprior,stdprior,Ie0, div_penalty,Directives)
 % RECURSE_AICFIT - maybe better to scrap AICFull in the outputs.
 %   
 %  savename = sprintf('in-%03i-%03i.mat',idx_in(1),numel(idx_in));
@@ -953,8 +1053,8 @@ function [ne,neEnd,Ie,polycoefs,best_order,n_params,exitflag,nSteps,idx_out] = r
                   n_params(1), ...
                   numel(ne), ...
                   Directives.ErrType, ...
-                  Directives.ErrWidth );
-  if numel(dt) == 1
+                  Directives.ErrWidth ) + mean(div_penalty);
+  if numel(dt) == 1 
     % Nothing more to be done just abandon mission, we have reached the
     % end of the branch
     idx_out = idx_in;
@@ -991,7 +1091,7 @@ function [ne,neEnd,Ie,polycoefs,best_order,n_params,exitflag,nSteps,idx_out] = r
                       n_params1_2(1) + n_params2_2(1), ...
                       numel(ne1_2) + numel(ne2_2), ...
                       Directives.ErrType, ...
-                      Directives.ErrWidth );
+                      Directives.ErrWidth ) + mean(div_penalty(1:idxPartition2)) + mean(div_penalty((idxPartition2+1):end));
     % Then we try to split the intervall into thirds
     idxPartition3 = floor(size(pp,2)/3);
     if idxPartition3 == 0
@@ -1036,7 +1136,7 @@ function [ne,neEnd,Ie,polycoefs,best_order,n_params,exitflag,nSteps,idx_out] = r
                       n_params1_3(1) + n_params2_3(1)+ n_params3_3(1), ...
                       numel(ne1_3) + numel(ne2_3) + numel(ne3_3), ...
                       Directives.ErrType, ...
-                      Directives.ErrWidth );
+                      Directives.ErrWidth ) + mean(div_penalty(1:idxPartition3)) + mean(div_penalty((idxPartition3+1):(2*idxPartition3))) + mean(div_penalty((2*idxPartition3+1):end));
     end
     
     if AIChalves < AICFull & AIChalves <= AICthirds
@@ -1058,6 +1158,7 @@ function [ne,neEnd,Ie,polycoefs,best_order,n_params,exitflag,nSteps,idx_out] = r
                                                         [], ... % was: ieprior,...
                                                         [], ... % was: stdprior,...
                                                         Ie0(:,end),...
+                                                        div_penalty(1:idxPartition2),...
                                                         Directives);
       % Then we need to re-search for the best single-parameters for the
       % second half
@@ -1090,6 +1191,7 @@ function [ne,neEnd,Ie,polycoefs,best_order,n_params,exitflag,nSteps,idx_out] = r
                                                         [], ... % was: ieprior,...
                                                         [], ... % was: stdprior,...
                                                         Ie1_2(:,end),...
+                                                        div_penalty(idxPartition2+1:end),...
                                                         Directives);
       % and conquer!
       % AICFull = [AICc1_2,AICc2_2];
@@ -1126,6 +1228,7 @@ function [ne,neEnd,Ie,polycoefs,best_order,n_params,exitflag,nSteps,idx_out] = r
                                                         [], ... % was: ieprior,...
                                                         [], ... % was: stdprior,...
                                                         Ie0(:,end),...
+                                                        div_penalty(1:idxPartition3),...
                                                         Directives);
       [AIC2_3,polycoefs2_3,b_o2_3,n_params2_3,ne2_3,neEnd2_3,Ie2_3,exitflag2_3] = AICcFitParSeq(pp(:,(idxPartition3+1):(2*idxPartition3)),...
                                                         ppstd(:,(idxPartition3+1):(2*idxPartition3)),...
@@ -1156,6 +1259,7 @@ function [ne,neEnd,Ie,polycoefs,best_order,n_params,exitflag,nSteps,idx_out] = r
                                                         [], ... % was: ieprior,...
                                                         [], ... % was: stdprior,...
                                                         Ie1_3(:,end),...
+                                                        div_penalty((idxPartition3+1):(2*idxPartition3)),...
                                                         Directives);
       [AIC3_3,polycoefs3_3,b_o3_3,n_params3_3,ne3_3,neEnd3_3,Ie3_3,exitflag3_3] = AICcFitParSeq(pp(:,(2*idxPartition3+1):end),...
                                                         ppstd(:,(2*idxPartition3+1):end),...
@@ -1185,6 +1289,7 @@ function [ne,neEnd,Ie,polycoefs,best_order,n_params,exitflag,nSteps,idx_out] = r
                                                         [], ... % was: ieprior,...
                                                         [], ... % was: stdprior,...
                                                         Ie2_3(:,end),...
+                                                        div_penalty((2*idxPartition3+1):end),...
                                                         Directives);
       % and conquer!
       % AICFull = [AICc1_3,AICc2_3];

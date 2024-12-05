@@ -1,4 +1,4 @@
-function ElSpec_IC_iter(iter, log_dir, ppdir, fitdir, btime, etime, experiment)
+function ElSpec_IC_iter(iter, resdir, ppdir, fitdir, btime, etime, experiment)
 %% ElSpec extended with Ion Chemitry
 %% Based on Example-script for ElSpec_iqt usage
 % This script should be possible to adapt for anyone with basic skills in
@@ -20,7 +20,7 @@ elspecdir = "/home/oliver/Documents/ELSPEC";
 btime = [2006, 12, 12, 19, 30, 0];
 etime = [2006, 12, 12, 19, 35, 0];
 
-experiment = "arc1"
+experiment = 'arc1'
 %}
 
 %% 1, Setting up the matlab-path
@@ -80,9 +80,9 @@ ErrType = 'l'; % L for Lorentzian.
 %try soemthing with same partitioning:
 % if iter > 1
 %     m2 = iter - 2;
-%     nStepsm2 = load(fullfile('..', log_dir, ["/ElSpec-iqt_IC_" + m2 + ".mat"])).ElSpecOut.nSteps;
+%     nStepsm2 = load(fullfile('..', resdir, ["/ElSpec-iqt_IC_" + m2 + ".mat"])).ElSpecOut.nSteps;
 %     m1 = iter - 1;
-%     nStepsm1 = load(fullfile('..', log_dir, ["/ElSpec-iqt_IC_" + m1 + ".mat"])).ElSpecOut.nSteps;
+%     nStepsm1 = load(fullfile('..', resdir, ["/ElSpec-iqt_IC_" + m1 + ".mat"])).ElSpecOut.nSteps;
 %     if nStepsm2 == nStepsm1
 %         nstep = nStepsm2;
 %         disp('nstep copied')
@@ -95,13 +95,13 @@ ErrType = 'l'; % L for Lorentzian.
 
 if iter > 0
     j = iter - 1;
-    icdir = fullfile(log_dir,["IC_" + j + ".mat"]);
+    icdir = fullfile(resdir,["IC_" + j + ".mat"]);
     icdata = load(icdir);
     customIRI = icdata.elspec_iri_sorted;
     customAlpha = icdata.eff_rr;
     neinit = false;
 
-    elspec_m1 = fullfile(log_dir,["ElSpec-iqt_IC_" + j + ".mat"]);
+    elspec_m1 = fullfile(resdir,["ElSpec-iqt_IC_" + j + ".mat"]);
     nsteps_old = load(elspec_m1).ElSpecOut.nSteps;
     %ninteg = nsteps_old(1); did not result in converging behaviour
 else
@@ -110,12 +110,12 @@ else
     neinit = false;
 end
 
-Outname = fullfile(log_dir, ["ElSpec-iqt_IC_" + iter]);
+Outname = fullfile(resdir, ["ElSpec-iqt_IC_" + iter]);
 disp(Outname)
 
-nstepmin = limit_division(log_dir, iter-1);
+div_penalty = limit_division(resdir, iter-1);
 
-ElSpecOut = ElSpec_iqt('fitdir',fitdir,...
+ElSpecOut = ElSpec_iqtcl('fitdir',fitdir,...
                                        'ppdir',ppdir,...
                                        'experiment',experiment,...
                                        'hmax',hmax,'hmin',hmin,...
@@ -131,7 +131,7 @@ ElSpecOut = ElSpec_iqt('fitdir',fitdir,...
                                        'customAlpha', customAlpha, ...
                                        'neinit', neinit, ...
                                        'recombmodel', recombmodel,...
-                                       'nstepmin', nstepmin);
+                                       'div_penalty', div_penalty);
 %                                       'ErrType',ErrType,...
 
 
