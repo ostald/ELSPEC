@@ -56,6 +56,13 @@ function ElSpecOut = ElSpec_iqt(varargin)
 %  nstep        number of ne-slices in each time-step, default 1
 %  saveiecov    logical, should the large covariance matrices of
 %               the flux estimates be saved? default false.
+%  customIRI    define custom IRI model, matrix has to match height and
+%               time resolution (or set to false to invoke IRI model)
+%  customAlpha  define custom effective recombination rates
+%               matrix has to match height and time resolution (or set to
+%               false to calculate alpha from IRI model)
+%  neinit      initial electron density          
+
 %
 % OUTPUT:
 %  ElSpecOut    A MATLAB structure with fields:...
@@ -188,7 +195,8 @@ checkIonomodel = @(x) any(validatestring(x,validIonomodel));
 defaultRecombmodel = 'SheehanGr';
 validRecombmodel = {'SheehanGr','SheehanEx','Rees','ReesO2+', ...
                     'ReesN2+','ReesNO+','SheehanGrO2+', ...
-                    'SheehanGrN2+','SheehanGrNO+','delPozo1','delPozo2'};
+                    'SheehanGrN2+','SheehanGrNO+','delPozo1','delPozo2', ...
+                    'SheehanGrFlipchem'};
 checkRecombmodel = @(x) any(validatestring(x,validRecombmodel));
 
 % type of integration
@@ -283,7 +291,7 @@ defaultErrWidth = 3;
 checktErrWidth = @(x) (length(x)==1 & all(x>=1));
 
 % Outlier-settings
-defaultOutliers = ones(1,5);
+defaultOutliers = nan; %ones(1,5); no artificial outliers OS 17.09.24
 checkOutliers = @(x) (all(isnumeric(x)) & size(x,2)==5 & size(x,1)>=1 & all(x(:)>0));
 
 % Outfilename-settings
@@ -306,9 +314,22 @@ checkInterpSpec = @(x) ((numel(x) == 1) & isnumeric(x) & ...
 defaultFAdev = 3;
 checkFAdev = @(x) (isnumeric(x)&length(x)==1);
 
+% custom densities
+defaultCustomIRI = false;
+checkCustomIRI = @(x) (ndims(x) == 3 || x == false);
+
+% custom recombintaion rates
+defaultCustomAlpha = false;
+checkCustomAlpha = @(x) (ismatrix(x) || x == false);
+
+% defined initial electron density
+default_neinit = false;
+check_neinit = @(x) ((isvector(x) & all(x>0)) || x==false);
+
 % use special power-profile-reading-function?
 defaultppReadingFcn = [];
 checkPPReadingFcn = @(x) (isa(x,'function_handle')&numel(x)==1);
+
 
 if exist('inputParser') %#ok<EXIST> 
   % parse the input
@@ -348,6 +369,10 @@ if exist('inputParser') %#ok<EXIST>
   addParameter(p,'Ietype',defaultIetype,checkIetype);
   addParameter(p,'InterpSpec',defaultInterpSpec,checkInterpSpec);
   addParameter(p,'ppReadingFcn',defaultppReadingFcn,checkPPReadingFcn);
+  addParameter(p,'customAlpha',defaultCustomAlpha,checkCustomAlpha);
+  addParameter(p,'customIRI',defaultCustomIRI,checkCustomIRI);
+  addParameter(p,'neinit',default_neinit,check_neinit);
+
   parse(p,varargin{:})
   
   %out = struct;
@@ -387,11 +412,16 @@ else
   def_pars.ErrType = defaultErrType;
   def_pars.ErrWidth = defaultErrWidth;
   def_pars.Outliers = defaultOutliers;
-  def_pars.Outliers = defaultOutliers;
+  def_pars.Outfilename = defaultOutfilename;
   def_pars.Ietype = defaultIetype;
   def_pars.InterpSpec = defaultInterpSpec;
   def_pars.ppReadingFcn = defaultppReadingFcn;
   
+  def_pars.customIRI = defaultCustomIRI;
+  def_pars.customAlpha = defaultCustomAlpha;
+  def_pars.neinit = default_neinit
+                    
+
   out = parse_pv_pairs(def_pars,varargin);
   out.E = out.egrid;
   
@@ -486,7 +516,7 @@ else
                      out.version , out.tres , readIRI, p.Results.fadev , p.Results.bottomstdfail, ...
 		     p.Results.ppReadingFcn);
     if strcmp(out.recombmodel,'SheehanGrFlipchem')
-    out.iri = calculateFlipchemComposition(out.ts,out.h,out.par,out.pp,out.loc,out.iri);
+        out.iri = calculateFlipchemComposition(out.ts,out.h,out.par,out.pp,out.loc,out.iri);
     end
     % warn about the ESR compositions
     if strcmp(p.Results.radar,'esr')
@@ -500,8 +530,24 @@ else
         end
     end
 
+    if out.customIRI ~= false 
+        %replace IRI model
+        if size(out.customIRI) ~= size(out.iri)
+            error('Size of custom IRI composition does not match')
+        end
+        out.iri = out.customIRI;
+    end
 
 end
+
+%figure
+%pcolor(out.ts, out.h, squeeze(out.iri(:, 3, :)))
+
+% if all(out.par(:, 3, :) == repmat(squeeze(out.par(:, 3, 1)), 1, max(size(out.par(1, 3, :)))), 'all')
+%     error("No Time variation in electron temperature.")
+% end
+
+
 % nt = 2^floor(log2(numel(out.ts)));
 nt = numel(out.ts); % 128*floor(numel(out.ts)/128); 
 % Change above since there is no FFT-type reason to stick to powers
@@ -576,8 +622,9 @@ out.AICc = NaN(out.maxorder,nt); % an array for the information
 
 out.IeCov = NaN(nE,nE,nt);   % Covariances of flux estimates
 out.IeStd = NaN(nE,nt); % standard deviation of flux estimates
-out.alpha = NaN(nh,nt); % an array for the effective recombination
-                        % rates
+%out.alpha = NaN(nh,nt); % an array for the effective recombination
+%                        % rates
+
 out.q = NaN(nh,nt); % an array for ion production rates
 out.polycoefs = cell(out.maxorder,nt);
 out.polycoefsCovar = NaN(out.maxorder,out.maxorder+1,out.maxorder+1,nt);
@@ -636,15 +683,29 @@ A(isnan(A)) = 0;
 
 % update the effective recombination coefficient. Assume N2+
 % density to be zero
-for it = 1:numel(out.ts)
-  out.alpha(:,it) = effective_recombination_coefficient(out.h, ...
+if out.customAlpha ~= false
+    if ~all(size(out.customAlpha) == [length(out.h), length(out.ts)])
+        disp(size(out.customAlpha))
+        disp([length(out.h), length(out.ts)])
+        error('Size of Custom Alpha matrix does not match height and time resolution')
+    end
+    out.alpha = out.customAlpha; 
+else
+    for it = 1:numel(out.ts)
+      out.alpha(:,it) = effective_recombination_coefficient(out.h, ...
                                                     out.par(:,3,it), ...
                                                     out.iri(:,9,it), ...
                                                     out.iri(:,9,it).*0, ...
                                                     out.iri(:,8,it), ...
                                                     out.recombmodel );
+    end
 end
-
+for it = 1:numel(out.ts)
+    if any(~isreal(out.alpha(:, it)))
+        disp(it)
+        error("Imaginary alpha detected, are there negative temperatures?")
+    end
+end
 
 % save interval is 100 step, independently from the time resolution
 ndtsave = 20;%ceil(mean(120./out.dt));
@@ -690,6 +751,24 @@ stdprior = out.stdprior;
                                                   [],... % Ie(t) constant
                                                   Directives);
 ne0 = sqrt(A*(Ie1(:,1).*out.dE')./alpha(:,1));% neEnd(:,end);
+out.ne0 = ne0;
+out.q0 = A*(Ie1(:,1).*out.dE');
+
+% figure
+% hold on
+% plot(ne0, out.h)
+% legend('ne0')
+% drawnow()
+
+% replace ne with value from IC 
+% removed 05.04.23 bc neinit is based on old q, new alpha
+%       assuming steady state (both the case here and with 30min time
+%       window in IC), ne = sqrt(q/alpha) => newly fittet q is better
+%r eintroduced 13,11,23 for chopping evaluation into 15 min intervalls
+if out.neinit ~= false
+    ne0 = out.neinit';
+    out.ne0 = ne0;
+end
 Ie0 = Ie1;
 % $$$ [AICc1,polycoefs1,best_order1,n_params1,ne1,neEnd1,Ie1] = AICcFitParSeq(pp(:,1:Directives.ninteg),...
 % $$$                                      ppstd(:,1:Directives.ninteg),...
@@ -764,6 +843,11 @@ while iStart < numel(dt)
                                                     out);
   % disp(['returned from recurse_AICfit, nt: ',num2str(numel(cnSteps))])
   ne0 = cneEnd(:,end);
+
+  % plot(cne(:, 1), out.h)
+  % legend('ne0', 'cne1')
+  % pause()  
+
   if iStart == 1
     ne_all         = cne;
     neEnd_all      = cneEnd;
@@ -905,7 +989,7 @@ if  ~(out.saveiecov)
 end
 ElSpecOut = out;
 try
-  save(outfilename,'ElSpecOut')
+  save(outfilename,'ElSpecOut', "-v7.3")
 catch
   disp(['Failed to save ElSpecOut into file:',outfilename])
 end
@@ -1333,7 +1417,23 @@ function [AICcSec,polycoefs,best_order,n_params,ne,neEnd,Ie,exitflags] = AICcFit
       polycoefs{nn,i_t} = x;
     end
     exitflags(nn,1:n_tsteps) = exitflag;
-    AICcSec(nn,1:n_tsteps) = fval;
+    % was: AICcSec(nn,1:n_tsteps) = fval;
+    AICcSec(nn,1:n_tsteps) = ElSpec_fitfun(x, ...
+                                           pp, ...
+                                           ppstd, ...
+                                           ne00, ...
+                                           A, ...
+                                           alpha, ...
+                                           dt, ...
+                                           Directives.Ec, ...
+                                           Directives.dE , ...
+                                           'integrate', ...
+                                           ieprior, ...
+                                           stdprior, ...
+                                           n_meas, ...
+                                           Directives.ErrType, ...
+                                           Directives.ErrWidth,...
+                                           S_type);
     
   end
 
