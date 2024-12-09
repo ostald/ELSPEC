@@ -22,8 +22,8 @@ else
     fluc(isnan(fluc)) = 0;
     
     %crit = sum(fluc, 1)/size(fluc, 1)
-    division_penalty = (sum(fluc, 1)/size(fluc, 1)) .* 150;
-    division_penalty = (division_penalty + 2*div_penalty_last) / 3;
+    division_penalty = (sum(fluc, 1)/size(fluc, 1)) .* 200;
+    division_penalty = (division_penalty + 3*div_penalty_last) / 4;
 
     
     %nstepmin = min(min(hist_nsteps{1}, hist_nsteps{2}), hist_nsteps{3});
@@ -34,6 +34,24 @@ else
     
     %nstepmin_before = nste
 end
+
+
+%{
+function plot_divLim_iter(dir)
+    figure
+    axis([0,700,0,200])
+    hold off
+    h = animatedline;
+    for i = 0:42
+        clearpoints(h)
+        load(fullfile(dir, ["ElSpec-iqt_IC_" + i]))
+%         plot(ElSpecOut.div_penalty, 'Color', [0, 0, i/50, 1])
+        addpoints(h, 1:numel(ElSpecOut.ts), ElSpecOut.div_penalty)
+        drawnow limitrate
+        pause(1)
+    end 
+end
+%}
 
 
 if 0
