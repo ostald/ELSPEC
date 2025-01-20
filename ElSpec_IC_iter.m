@@ -32,7 +32,7 @@ experiment = 'arc1'
 %% 2 Setup of parameters controlling ELSPEC
 
 % Energy grid - between 10 ad 100 keV in 400 logarithmic/exponential steps
-egrid = logspace(1,5.5,200);
+egrid = logspace(1,5,200);
 
 % Data directories
 % The paths to the directories with the ionospheric parameters and the
@@ -49,7 +49,7 @@ egrid = logspace(1,5.5,200);
 %experiment = 'arc1';
 % Altitude-limits.
 hmax = 150;
-hmin = 60;
+hmin = 95;
 % Time-limits
 %btime = [2012, 12, 11, 20, 00, 0];
 %etime = [2012, 12, 11, 21, 55, 0];
@@ -115,6 +115,8 @@ disp(Outname)
 
 div_penalty = limit_division(resdir, iter-1);
 
+%ppReadingFcn = @(x) guisdap_beata_pp_reader(x);
+
 ElSpecOut = ElSpec_iqtcl('fitdir',fitdir,...
                                        'ppdir',ppdir,...
                                        'experiment',experiment,...
@@ -133,6 +135,7 @@ ElSpecOut = ElSpec_iqtcl('fitdir',fitdir,...
                                        'recombmodel', recombmodel,...
                                        'div_penalty', div_penalty);
 %                                       'ErrType',ErrType,...
+%                                       'ppReadingFcn',ppReadingFcn,...
 
 
 

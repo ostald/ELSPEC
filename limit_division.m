@@ -1,5 +1,6 @@
 function division_penalty = limit_division(dir, iter)
-
+%dir = '/Users/ost051/Documents/PhD/Results/2022-11-02_andres_iqtcl2/'
+%iter = 5
 if iter <= 3
     division_penalty = 0;
 else
@@ -16,8 +17,8 @@ else
         %hist_ie{i} = hist_ie{i} .* repmat(dE', [1, numel(ts)])
     end
     
-    ie_sum = hist_ie{1} + hist_ie{2} + hist_ie{3};
-    fluc = abs((hist_ie{1} - 2.*hist_ie{2} + hist_ie{3}) ./ ie_sum ); %.* log10(ie_sum)
+    ie_sum = sum(hist_ie{1} + hist_ie{2} + hist_ie{3}, 1);
+    fluc = sum(abs((hist_ie{1} - 2.*hist_ie{2} + hist_ie{3})), 1) ./ ie_sum ; %.* log10(ie_sum)
     %fluc = abs((hist_ie{2} - hist_ie{1})) %./ (hist_ie{1} + hist_ie{2} ))
     fluc(isnan(fluc)) = 0;
     
@@ -60,13 +61,13 @@ ts = [1:numel(ts)]
 EE = res.ElSpecOut.E(1:end-1)
 h = res.ElSpecOut.h
 %EE = h
-ielim = [6 15]
+ielim = [8 11]
 
 figure
 nplots = 6
 h1=subplot(nplots,1,1);
 pcolor(log10(hist_ie{1})),shading flat
-set(h1,'yscale','log')
+%set(h1,'yscale','log')
 %ylim(p.Results.elim)
 %xlim(datenum([datetime(p.Results.btime) datetime(p.Results.etime)]))
 %caxis(p.Results.ielim)
@@ -79,7 +80,7 @@ cbh3=colorbar;
 
 h2=subplot(nplots,1,2);
 pcolor(log10(hist_ie{2})),shading flat
-set(h2,'yscale','log')
+%set(h2,'yscale','log')
 %ylim(p.Results.elim)
 %xlim(datenum([datetime(p.Results.btime) datetime(p.Results.etime)]))
 %caxis(p.Results.ielim)
@@ -92,7 +93,7 @@ cbh3=colorbar;
 
 h3=subplot(nplots,1,3);
 pcolor(log10(hist_ie{3})),shading flat
-set(h3,'yscale','log')
+%set(h3,'yscale','log')
 %ylim(p.Results.elim)
 %xlim(datenum([datetime(p.Results.btime) datetime(p.Results.etime)]))
 %caxis(p.Results.ielim)
@@ -104,12 +105,13 @@ cbh3=colorbar;
 
 
 h4=subplot(nplots,1,4);
-pcolor((fluc)),shading flat
-set(h4,'yscale','log')
+pcolor((abs((hist_ie{1} - 2.*hist_ie{2} + hist_ie{3})))), shading flat
+%pcolor((fluc)),shading flat
+%set(h4,'yscale','log')
 %ylim(p.Results.elim)
 %xlim(datenum([datetime(p.Results.btime) datetime(p.Results.etime)]))
 %caxis(p.Results.ielim)
-caxis([-1, 3])
+caxis([0, 1e11])
 ylabel('Energy [keV]')
 cbh3=colorbar;
 %ylabel(cbh3,Ielabel)
@@ -131,9 +133,9 @@ cbh3=colorbar;
 
 
 h6=subplot(nplots,1,6);
-plot(ts, min(min(hist_nsteps{1}, hist_nsteps{2}), hist_nsteps{3}))
+plot(ts, min(min(hist_div_penalty{1}, hist_div_penalty{2}), hist_div_penalty{3}))
 hold on;
-plot(ts, nstepmin)
+plot(ts, division_penalty)
 %set(h3,'yscale','log')
 %ylim(p.Results.elim)
 %xlim(datenum([datetime(p.Results.btime) datetime(p.Results.etime)]))
