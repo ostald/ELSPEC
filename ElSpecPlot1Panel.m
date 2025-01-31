@@ -357,172 +357,172 @@ set(h5, 'Position', [pos5(1:2)-[0,.05] [.85 1.77].*pos4(3:4)]);
 set(h6, 'Position', [pos6(1:2)-[0,.05] [.85 1.77].*pos4(3:4)]);
 linkaxes([h1 h2 h3 h4 h5 h6],'x')
 linkaxes([h1 h2],'y')
-% if strcmp(p.Results.fluxtype,'both')
-%     linkaxes([h3 h5],'y')
-% end
-% 
-% hstep = 1;
-% if range(p.Results.hlim)>2
-%     hstep = 2;
-% end
-% if range(p.Results.hlim)>10
-%     hstep = 5;
-% end
-% if range(p.Results.hlim)>20
-%     hstep = 10;
-% end
-% if range(p.Results.hlim)>50
-%     hstep = 20;
-% end
-% hticks = ceil(p.Results.hlim(1)/10)*10:hstep:floor(p.Results.hlim(2)/10-.01)*10;
-% set(h1,'TickDir','both')
-% set(h1,'YTick',hticks)
-% set(h2,'TickDir','both')
-% set(h2,'YTick',hticks)
-% eticks=[.5 1 2 4 8 16 32 64 128 256 512 1024];
-% set(h3,'YTick',eticks(eticks<p.Results.elim(2)))
-% set(h3,'TickDir','both')
-% set(h4,'TickDir','both')
-% facstep = .1;
-% if range(p.Results.faclim) > .5
-%     facstep = .2;
-% end
-% if range(p.Results.faclim) > 1
-%     facstep = .5;
-% end
-% if range(p.Results.faclim) > 2.5
-%     facstep = 1;
-% end
-% if range(p.Results.faclim) > 4
-%     facstep = 2;
-% end
-% if range(p.Results.faclim) > 10
-%     facstep = 4;
-% end
-% if range(p.Results.faclim) > 15
-%     facstep = 5;
-% end
-% if range(p.Results.faclim) > 30
-%     facstep = 10;
-% end
-% facticks = ceil(p.Results.faclim(1)*10)/10:facstep:floor(p.Results.faclim(end)*10-.1)/10;
-% if facstep >=2
-%     facticks = ceil(p.Results.faclim(1)):facstep:floor(p.Results.faclim(end)-.1);
-% end
-% set(h4,'YTick',facticks)
-% pstep = 1;
-% if range(p.Results.plim) > 4
-%     pstep = 2;
-% end
-% if range(p.Results.plim) > 10
-%     pstep = 4;
-% end
-% if range(p.Results.plim) > 15
-%     pstep = 5;
-% end
-% if range(p.Results.plim) > 30
-%     pstep = 10;
-% end
-% if range(p.Results.plim) > 60
-%     pstep = 20;
-% end
-% if range(p.Results.plim) > 150
-%     pstep = 50;
-% end
-% pticks = ceil(p.Results.plim(1)):pstep:floor(p.Results.plim(end)-.1);
-% if strcmp(p.Results.fluxtype,'both')
-%     set(h5,'YTick',eticks(eticks<p.Results.elim(2)))
-% else
-%     set(h5,'YTick',pticks)
-% end
-% set(h5,'TickDir','both')
-% chistep=1;
-% if range(p.Results.chisqrlim) > 5
-%     chistep=2;
-% end
-% if range(p.Results.chisqrlim) > 10
-%     chistep=4;
-% end
-% chiticks = ceil(p.Results.chisqrlim(1)):chistep:floor(p.Results.chisqrlim(end)-.1);
-% set(h6,'TickDir','both')
-% set(h6,'Ytick',chiticks)
-% set(h2,'XTick',get(h1,'XTick'))
-% set(h3,'XTick',get(h1,'XTick'))
-% set(h4,'XTick',get(h1,'XTick'))
-% set(h5,'XTick',get(h1,'XTick'))
-% set(h6,'XTick',get(h1,'XTick'))
-% datetick(h2,'x',13,'keeplimits','keepticks')
-% datetick(h3,'x',13,'keeplimits','keepticks')
-% datetick(h4,'x',13,'keeplimits','keepticks')
-% datetick(h5,'x',13,'keeplimits','keepticks')
-% datetick(h6,'x',13,'keeplimits','keepticks')
-% set(h1,'XTickLabel','')
-% set(h2,'XTickLabel','')
-% set(h3,'XTickLabel','')
-% set(h4,'XTickLabel','')
-% set(h5,'XTickLabel','')
-% set(h1,'LineWidth',1)
-% set(h2,'LineWidth',1)
-% set(h3,'LineWidth',1)
-% set(h4,'LineWidth',1)
-% set(h5,'LineWidth',1)
-% set(h6,'LineWidth',1)
-% 
-% cbsize1=get(cbh1,'Position');
-% set(cbh1,'Position',cbsize1.*[1,1.02,1,.8]);
-% 
-% cbsize2=get(cbh2,'Position');
-% set(cbh2,'Position',cbsize2.*[1,1.02,1,.8]);
-% 
-% cbsize3=get(cbh3,'Position');
-% set(cbh3,'Position',cbsize3.*[1,1.02,1,.8]);
-% 
-% 
-% set(h1,'fontsize',p.Results.fontsize)
-% set(cbh1,'fontsize',p.Results.fontsize)
-% set(h2,'fontsize',p.Results.fontsize)
-% set(cbh2,'fontsize',p.Results.fontsize)
-% set(h3,'fontsize',p.Results.fontsize)
-% set(cbh3,'fontsize',p.Results.fontsize)
-% set(h4,'fontsize',p.Results.fontsize)
-% set(h5,'fontsize',p.Results.fontsize)
-% set(h6,'fontsize',p.Results.fontsize)
-% 
-% if strcmp(p.Results.neplot,'log')
-%     set(cbh1,'YTick',5:13)
-%     set(cbh1,'YTickLabel',{'10^{5}';'10^{6}';'10^{7}';'10^{8}'; ...
-%                         '10^{9}';'10^{10}';'10^{11}';'10^{12}';'10^{13}'})
-%     set(cbh2,'YTick',5:13)
-%     set(cbh2,'YTickLabel',{'10^{5}';'10^{6}';'10^{7}';'10^{8}'; ...
-%                         '10^{9}';'10^{10}';'10^{11}';'10^{12}';'10^{13}'}) ...
-% 
-% end
-% set(cbh3,'YTick',5:13)
-% set(cbh3,'YTickLabel',{'10^{5}';'10^{6}';'10^{7}';'10^{8}';'10^{9}';'10^{10}';'10^{11}';'10^{12}';'10^{13}'})
-% 
-% 
-% set(h1,'layer','top')
-% set(cbh1,'LineWidth',1,'TickDir','both')
-% set(h2,'layer','top')
-% set(cbh2,'LineWidth',1,'TickDir','both')
-% set(h3,'layer','top')
-% set(cbh3,'LineWidth',1,'TickDir','both')
-% set(h4,'layer','top')
-% set(h5,'layer','top')
-% set(h6,'layer','top')
-% 
-% 
-% tstr1 = datestr(datenum(datetime((ElSpecOut.te(1)),'ConvertFrom', ...
-%                                  'posixtime')),29);
-% tstr2 = datestr(datenum(datetime((ElSpecOut.te(end)),'ConvertFrom', ...
-%                                  'posixtime')),29);
-% if strcmp(tstr1,tstr2)
-%     tstr = tstr1;
-% else
-%     tstr = [tstr1,' -- ',tstr2];
-% end
-% title(h1,tstr)
-% drawnow
-% 
-% 
-% end
+if strcmp(p.Results.fluxtype,'both')
+    linkaxes([h3 h5],'y')
+end
+
+hstep = 1;
+if range(p.Results.hlim)>2
+    hstep = 2;
+end
+if range(p.Results.hlim)>10
+    hstep = 5;
+end
+if range(p.Results.hlim)>20
+    hstep = 10;
+end
+if range(p.Results.hlim)>50
+    hstep = 20;
+end
+hticks = ceil(p.Results.hlim(1)/10)*10:hstep:floor(p.Results.hlim(2)/10-.01)*10;
+set(h1,'TickDir','both')
+set(h1,'YTick',hticks)
+set(h2,'TickDir','both')
+set(h2,'YTick',hticks)
+eticks=[.5 1 2 4 8 16 32 64 128 256 512 1024];
+set(h3,'YTick',eticks(eticks<p.Results.elim(2)))
+set(h3,'TickDir','both')
+set(h4,'TickDir','both')
+facstep = .1;
+if range(p.Results.faclim) > .5
+    facstep = .2;
+end
+if range(p.Results.faclim) > 1
+    facstep = .5;
+end
+if range(p.Results.faclim) > 2.5
+    facstep = 1;
+end
+if range(p.Results.faclim) > 4
+    facstep = 2;
+end
+if range(p.Results.faclim) > 10
+    facstep = 4;
+end
+if range(p.Results.faclim) > 15
+    facstep = 5;
+end
+if range(p.Results.faclim) > 30
+    facstep = 10;
+end
+facticks = ceil(p.Results.faclim(1)*10)/10:facstep:floor(p.Results.faclim(end)*10-.1)/10;
+if facstep >=2
+    facticks = ceil(p.Results.faclim(1)):facstep:floor(p.Results.faclim(end)-.1);
+end
+set(h4,'YTick',facticks)
+pstep = 1;
+if range(p.Results.plim) > 4
+    pstep = 2;
+end
+if range(p.Results.plim) > 10
+    pstep = 4;
+end
+if range(p.Results.plim) > 15
+    pstep = 5;
+end
+if range(p.Results.plim) > 30
+    pstep = 10;
+end
+if range(p.Results.plim) > 60
+    pstep = 20;
+end
+if range(p.Results.plim) > 150
+    pstep = 50;
+end
+pticks = ceil(p.Results.plim(1)):pstep:floor(p.Results.plim(end)-.1);
+if strcmp(p.Results.fluxtype,'both')
+    set(h5,'YTick',eticks(eticks<p.Results.elim(2)))
+else
+    set(h5,'YTick',pticks)
+end
+set(h5,'TickDir','both')
+chistep=1;
+if range(p.Results.chisqrlim) > 5
+    chistep=2;
+end
+if range(p.Results.chisqrlim) > 10
+    chistep=4;
+end
+chiticks = ceil(p.Results.chisqrlim(1)):chistep:floor(p.Results.chisqrlim(end)-.1);
+set(h6,'TickDir','both')
+set(h6,'Ytick',chiticks)
+set(h2,'XTick',get(h1,'XTick'))
+set(h3,'XTick',get(h1,'XTick'))
+set(h4,'XTick',get(h1,'XTick'))
+set(h5,'XTick',get(h1,'XTick'))
+set(h6,'XTick',get(h1,'XTick'))
+datetick(h2,'x',13,'keeplimits','keepticks')
+datetick(h3,'x',13,'keeplimits','keepticks')
+datetick(h4,'x',13,'keeplimits','keepticks')
+datetick(h5,'x',13,'keeplimits','keepticks')
+datetick(h6,'x',13,'keeplimits','keepticks')
+set(h1,'XTickLabel','')
+set(h2,'XTickLabel','')
+set(h3,'XTickLabel','')
+set(h4,'XTickLabel','')
+set(h5,'XTickLabel','')
+set(h1,'LineWidth',1)
+set(h2,'LineWidth',1)
+set(h3,'LineWidth',1)
+set(h4,'LineWidth',1)
+set(h5,'LineWidth',1)
+set(h6,'LineWidth',1)
+
+cbsize1=get(cbh1,'Position');
+set(cbh1,'Position',cbsize1.*[1,1.02,1,.8]);
+
+cbsize2=get(cbh2,'Position');
+set(cbh2,'Position',cbsize2.*[1,1.02,1,.8]);
+
+cbsize3=get(cbh3,'Position');
+set(cbh3,'Position',cbsize3.*[1,1.02,1,.8]);
+
+
+set(h1,'fontsize',p.Results.fontsize)
+set(cbh1,'fontsize',p.Results.fontsize)
+set(h2,'fontsize',p.Results.fontsize)
+set(cbh2,'fontsize',p.Results.fontsize)
+set(h3,'fontsize',p.Results.fontsize)
+set(cbh3,'fontsize',p.Results.fontsize)
+set(h4,'fontsize',p.Results.fontsize)
+set(h5,'fontsize',p.Results.fontsize)
+set(h6,'fontsize',p.Results.fontsize)
+
+if strcmp(p.Results.neplot,'log')
+    set(cbh1,'YTick',5:13)
+    set(cbh1,'YTickLabel',{'10^{5}';'10^{6}';'10^{7}';'10^{8}'; ...
+                        '10^{9}';'10^{10}';'10^{11}';'10^{12}';'10^{13}'})
+    set(cbh2,'YTick',5:13)
+    set(cbh2,'YTickLabel',{'10^{5}';'10^{6}';'10^{7}';'10^{8}'; ...
+                        '10^{9}';'10^{10}';'10^{11}';'10^{12}';'10^{13}'}) ...
+
+end
+set(cbh3,'YTick',5:13)
+set(cbh3,'YTickLabel',{'10^{5}';'10^{6}';'10^{7}';'10^{8}';'10^{9}';'10^{10}';'10^{11}';'10^{12}';'10^{13}'})
+
+
+set(h1,'layer','top')
+set(cbh1,'LineWidth',1,'TickDir','both')
+set(h2,'layer','top')
+set(cbh2,'LineWidth',1,'TickDir','both')
+set(h3,'layer','top')
+set(cbh3,'LineWidth',1,'TickDir','both')
+set(h4,'layer','top')
+set(h5,'layer','top')
+set(h6,'layer','top')
+
+
+tstr1 = datestr(datenum(datetime((ElSpecOut.te(1)),'ConvertFrom', ...
+                                 'posixtime')),29);
+tstr2 = datestr(datenum(datetime((ElSpecOut.te(end)),'ConvertFrom', ...
+                                 'posixtime')),29);
+if strcmp(tstr1,tstr2)
+    tstr = tstr1;
+else
+    tstr = [tstr1,' -- ',tstr2];
+end
+title(h1,tstr)
+drawnow
+
+
+end
