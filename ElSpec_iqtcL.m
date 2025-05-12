@@ -427,7 +427,7 @@ else
   
   def_pars.customIRI = defaultCustomIRI;
   def_pars.customAlpha = defaultCustomAlpha;
-  def_pars.neinit = default_neinit
+  def_pars.neinit = default_neinit;
                     
 
   out = parse_pv_pairs(def_pars,varargin);
@@ -540,7 +540,7 @@ else
         end
     end
 
-    if any(out.customIRI)% ~= false 
+    if any(out.customIRI(:))% ~= false 
         %replace IRI model
         if size(out.customIRI) ~= size(out.iri)
             error('Size of custom IRI composition does not match')
@@ -646,6 +646,13 @@ out.FACstd = NaN(1,nt);
 out.Pe = NaN(1,nt);
 out.PeStd = NaN(1,nt);
 
+% starting with recursion depth 1, adding to first dimension with every recursion.
+% recursion level and relevant data saved for every timestep nt
+% 4 parameters saved for current recursion level:
+% recursion level, nsteps, cAIChlaves, cAICthirds, div_penalty
+out.recursionTracker = zeros(1, nt, 5);  
+recursionLevel = 0;
+
 if numel(out.div_penalty) == 1
     out.div_penalty = out.div_penalty.*zeros(1, numel(out.ts));
 end
@@ -699,7 +706,7 @@ A(isnan(A)) = 0;
 % update the effective recombination coefficient. Assume N2+
 % density to be zero
 % if out.customAlpha ~= false
-if any(out.customAlpha)% ~= false
+if any(out.customAlpha(:))% ~= false
     if ~all(size(out.customAlpha) == [length(out.h), length(out.ts)])
         disp(size(out.customAlpha))
         disp([length(out.h), length(out.ts)])
@@ -720,6 +727,10 @@ for it = 1:numel(out.ts)
     if any(~isreal(out.alpha(:, it)))
         disp(it)
         error("Imaginary alpha detected, are there negative temperatures?")
+    end
+    if any(out.alpha(:, it) < 0)
+        disp(it)
+        error("Negative alpha detected")%, are there negative temperatures?")
     end
 end
 
@@ -842,9 +853,14 @@ while iStart < numel(dt)
                                                     stdprior,...
                                                     Ie0(:,end),...
                                                     out);
+
+  clear recursionTracker
+  %                                                      recursionLevel, numel(dt),          cAICfull, cAIChalves, cAICthirds, div_penalty, [numel(dt),          1]
+  recursionTracker(1, 1:numel(iStart:iEnd), :) = repmat([recursionLevel, numel(iStart:iEnd), NaN,      NaN,        NaN,        0],          [numel(iStart:iEnd), 1]);
+
   % 3rd enter the recursion
   % disp(['Calling recurse_AICfit, nt: ',num2str(numel(dt(iStart:iEnd)))])
-  [cne,cneEnd,cIe,cpolycoefs,cbest_order,cn_params,cexitflag,cnSteps] = recurse_AICfit(cne,...
+  [cne,cneEnd,cIe,cpolycoefs,cbest_order,cn_params,cexitflag,cnSteps,cidx, crecursionTracker] = recurse_AICfit(cne,...
                                                     cneEnd,...
                                                     pp(:,iStart:iEnd),...
                                                     ppstd(:,iStart:iEnd),...
@@ -861,8 +877,13 @@ while iStart < numel(dt)
                                                     ieprior,...
                                                     stdprior,...
                                                     Ie0(:,end),...
-                                                    out.div_penalty(iStart:iEnd),... 
+                                                    out.div_penalty(iStart:iEnd),...
+                                                    recursionLevel, ...
                                                     out);
+
+  display(size(crecursionTracker))
+  recursionTracker = [recursionTracker; crecursionTracker];
+
   % disp(['returned from recurse_AICfit, nt: ',num2str(numel(cnSteps))])
   ne0 = cneEnd(:,end);
   if iStart == 1
@@ -874,6 +895,8 @@ while iStart < numel(dt)
     n_params_all   = cn_params;
     exitflag_all   = cexitflag;
     nSteps_all     = cnSteps;
+    recursionTracker_all = recursionTracker;
+
   else
     ne_all         = [ne_all,         cne];
     neEnd_all      = [neEnd_all,      cneEnd];
@@ -883,6 +906,15 @@ while iStart < numel(dt)
     n_params_all   = [n_params_all,   cn_params];
     exitflag_all   = [exitflag_all,   cexitflag];
     nSteps_all     = [nSteps_all,     cnSteps];
+
+      
+    s1 = size(recursionTracker_all, 1);
+    s2 = size(recursionTracker, 1);
+    smax = max(s1, s2);
+    recursionTracker_all(s1+1:smax, :, :) = NaN;
+    recursionTracker(s2+1:smax, :, :) = NaN;
+      
+    recursionTracker_all = [recursionTracker_all, recursionTracker];
   end
   iStart = iStart + iIntervall;
 end
@@ -896,6 +928,7 @@ out.neEnd = neEnd_all(:,1:n_t);
 out.Ie = Ie_all(:,1:n_t);
 out.exitflag = exitflag_all(:,1:n_t);
 out.nSteps = nSteps_all(1:n_t);
+out.recursionTracker = recursionTracker_all(:, 1:n_t, :);
 % out.AICc = AICc;
 % 6th calculate the covariances
 ne0Cov = diag(mean(ppstd(:,1:out.nSteps(1)).^2,2)/out.nSteps(1));
@@ -1035,16 +1068,18 @@ end
 ElSpecOut = out;
 try
   save(outfilename,'ElSpecOut', "-v7.3")
+  disp("saved to " + outfilename)
 catch
   disp(['Failed to save ElSpecOut into file:',outfilename])
 end
 end
-
-function [ne,neEnd,Ie,polycoefs,best_order,n_params,exitflag,nSteps,idx_out] = recurse_AICfit(ne,neEnd,pp,ppstd,alpha,dt,ne00,A,polycoefs,best_order,n_params,Ie,idx_in,exitflag,ieprior,stdprior,Ie0, div_penalty,Directives)
+%         1  2     3  4         
+function [ne,neEnd,Ie,polycoefs,best_order,n_params,exitflag,nSteps,idx_out,recursionTracker_] = recurse_AICfit(ne,neEnd,pp,ppstd,alpha,dt,ne00,A,polycoefs,best_order,n_params,Ie,idx_in,exitflag,ieprior,stdprior,Ie0, div_penalty, recursionLevel,Directives)
 % RECURSE_AICFIT - maybe better to scrap AICFull in the outputs.
 %   
 %  savename = sprintf('in-%03i-%03i.mat',idx_in(1),numel(idx_in));
 %  save(savename,'ne00')
+  recursionLevel = recursionLevel + 1;
   nSteps = numel(dt).*ones(size(dt(:)'));
   % disp(['Entering recurse_AICfit, nt: ',num2str(numel(dt))])
   AICFull = AICc( pp, ...
@@ -1054,6 +1089,7 @@ function [ne,neEnd,Ie,polycoefs,best_order,n_params,exitflag,nSteps,idx_out] = r
                   numel(ne), ...
                   Directives.ErrType, ...
                   Directives.ErrWidth ) + mean(div_penalty);
+  recursionTracker_(1, 1:numel(dt), :) = repmat([recursionLevel, numel(dt), AICfull, -1,  -1,  0],          [numel(dt), 1]);
   if numel(dt) == 1 
     % Nothing more to be done just abandon mission, we have reached the
     % end of the branch
@@ -1138,10 +1174,14 @@ function [ne,neEnd,Ie,polycoefs,best_order,n_params,exitflag,nSteps,idx_out] = r
                       Directives.ErrType, ...
                       Directives.ErrWidth ) + mean(div_penalty(1:idxPartition3)) + mean(div_penalty((idxPartition3+1):(2*idxPartition3))) + mean(div_penalty((2*idxPartition3+1):end));
     end
+
+    %                                              recursionLevel, numel(dt), cAICfull, cAIChalves, cAICthirds, div_penalty, [numel(dt), 1]
+    recursionTracker_(1, 1:numel(dt), :) = repmat([recursionLevel, numel(dt), AICfull,  AIChalves,  AICthirds,  0],          [numel(dt), 1]);
+    display(size(recursionTracker_))
     
     if AIChalves < AICFull & AIChalves <= AICthirds
       % Divide into 2 halves
-      [ne1_2,neEnd1_2,Ie1_2,polycoefs1_2,best_order1_2,n_params1_2,exitflag1_2,nSteps1_2,idx_out1_2] = recurse_AICfit(ne1_2,...
+      [ne1_2,neEnd1_2,Ie1_2,polycoefs1_2,best_order1_2,n_params1_2,exitflag1_2,nSteps1_2,idx_out1_2,recursionTracker1_2] = recurse_AICfit(ne1_2,...
                                                         neEnd1_2,...% was:(:,1:idxPartition2),...
                                                         pp(:,1:idxPartition2),...
                                                         ppstd(:,1:idxPartition2),...
@@ -1159,6 +1199,7 @@ function [ne,neEnd,Ie,polycoefs,best_order,n_params,exitflag,nSteps,idx_out] = r
                                                         [], ... % was: stdprior,...
                                                         Ie0(:,end),...
                                                         div_penalty(1:idxPartition2),...
+                                                        recursionLevel, ...
                                                         Directives);
       % Then we need to re-search for the best single-parameters for the
       % second half
@@ -1174,7 +1215,7 @@ function [ne,neEnd,Ie,polycoefs,best_order,n_params,exitflag,nSteps,idx_out] = r
                                                         Ie1_2(:,end),...
                                                         Directives);
       % and continue on with this into the recursion for the second half
-      [ne2_2,neEnd2_2,Ie2_2,polycoefs2_2,best_order2_2,n_params2_2,exitflag2_2,nSteps2_2,idx_out2_2] = recurse_AICfit(ne2_2,...
+      [ne2_2,neEnd2_2,Ie2_2,polycoefs2_2,best_order2_2,n_params2_2,exitflag2_2,nSteps2_2,idx_out2_2,recursionTracker2_2] = recurse_AICfit(ne2_2,...
                                                         neEnd2_2,...% was: (:,(idxPartition2+1):end),...
                                                         pp(:,(idxPartition2+1):end),...
                                                         ppstd(:,(idxPartition2+1):end),...
@@ -1192,7 +1233,15 @@ function [ne,neEnd,Ie,polycoefs,best_order,n_params,exitflag,nSteps,idx_out] = r
                                                         [], ... % was: stdprior,...
                                                         Ie1_2(:,end),...
                                                         div_penalty(idxPartition2+1:end),...
+                                                        recursionLevel, ...
                                                         Directives);
+
+      s1 = size(recursionTracker1_2, 1);
+      s2 = size(recursionTracker2_2, 1);
+      smax = max(s1, s2);
+      recursionTracker1_2(s1+1:smax, :, :) = NaN;
+      recursionTracker2_2(s2+1:smax, :, :) = NaN;
+      recursionTracker_ = [recursionTracker_; recursionTracker1_2, recursionTracker2_2];
       % and conquer!
       % AICFull = [AICc1_2,AICc2_2];
       polycoefs = cat(2,polycoefs1_2,polycoefs2_2);
@@ -1211,7 +1260,7 @@ function [ne,neEnd,Ie,polycoefs,best_order,n_params,exitflag,nSteps,idx_out] = r
     elseif AICthirds < AICFull & AICthirds <= AIChalves
       % Divide into thirds, same as above but branching into the recursion
       % in the 3 thirds 
-      [ne1_3,neEnd1_3,Ie1_3,polycoefs1_3,best_order1_3,n_params1_3,exitflag1_3,nSteps1_3,idx_out1_3] = recurse_AICfit(ne1_3,...
+      [ne1_3,neEnd1_3,Ie1_3,polycoefs1_3,best_order1_3,n_params1_3,exitflag1_3,nSteps1_3,idx_out1_3,recursionTracker1_3] = recurse_AICfit(ne1_3,...
                                                         neEnd1_3,...% was:(:,1:idxPartition2),...
                                                         pp(:,1:idxPartition3),...
                                                         ppstd(:,1:idxPartition3),...
@@ -1229,6 +1278,7 @@ function [ne,neEnd,Ie,polycoefs,best_order,n_params,exitflag,nSteps,idx_out] = r
                                                         [], ... % was: stdprior,...
                                                         Ie0(:,end),...
                                                         div_penalty(1:idxPartition3),...
+                                                        recursionLevel, ...
                                                         Directives);
       [AIC2_3,polycoefs2_3,b_o2_3,n_params2_3,ne2_3,neEnd2_3,Ie2_3,exitflag2_3] = AICcFitParSeq(pp(:,(idxPartition3+1):(2*idxPartition3)),...
                                                         ppstd(:,(idxPartition3+1):(2*idxPartition3)),...
@@ -1242,7 +1292,7 @@ function [ne,neEnd,Ie,polycoefs,best_order,n_params,exitflag,nSteps,idx_out] = r
                                                         Ie1_3(:,end),...
                                                         Directives);
 
-      [ne2_3,neEnd2_3,Ie2_3,polycoefs2_3,best_order2_3,n_params2_3,exitflag2_3,nSteps2_3,idx_out2_3] = recurse_AICfit(ne2_3,...
+      [ne2_3,neEnd2_3,Ie2_3,polycoefs2_3,best_order2_3,n_params2_3,exitflag2_3,nSteps2_3,idx_out2_3,recursionTracker2_3] = recurse_AICfit(ne2_3,...
                                                         neEnd2_3,...% was: (:,(idxPartition2+1):end),...
                                                         pp(:,(idxPartition3+1):(2*idxPartition3)),...
                                                         ppstd(:,(idxPartition3+1):(2*idxPartition3)),...
@@ -1260,6 +1310,7 @@ function [ne,neEnd,Ie,polycoefs,best_order,n_params,exitflag,nSteps,idx_out] = r
                                                         [], ... % was: stdprior,...
                                                         Ie1_3(:,end),...
                                                         div_penalty((idxPartition3+1):(2*idxPartition3)),...
+                                                        recursionLevel, ...
                                                         Directives);
       [AIC3_3,polycoefs3_3,b_o3_3,n_params3_3,ne3_3,neEnd3_3,Ie3_3,exitflag3_3] = AICcFitParSeq(pp(:,(2*idxPartition3+1):end),...
                                                         ppstd(:,(2*idxPartition3+1):end),...
@@ -1272,7 +1323,7 @@ function [ne,neEnd,Ie,polycoefs,best_order,n_params,exitflag,nSteps,idx_out] = r
                                                         [],... % was: stdprior(),...
                                                         Ie2_3(:,end),...
                                                         Directives);
-      [ne3_3,neEnd3_3,Ie3_3,polycoefs3_3,best_order3_3,n_params3_3,exitflag3_3,nSteps3_3,idx_out3_3] = recurse_AICfit(ne3_3,...
+      [ne3_3,neEnd3_3,Ie3_3,polycoefs3_3,best_order3_3,n_params3_3,exitflag3_3,nSteps3_3,idx_out3_3,recursionTracker3_3] = recurse_AICfit(ne3_3,...
                                                         neEnd3_3,...% was: (:,(idxPartition2+1):end),...
                                                         pp(:,(2*idxPartition3+1):end),...
                                                         ppstd(:,(2*idxPartition3+1):end),...
@@ -1290,7 +1341,18 @@ function [ne,neEnd,Ie,polycoefs,best_order,n_params,exitflag,nSteps,idx_out] = r
                                                         [], ... % was: stdprior,...
                                                         Ie2_3(:,end),...
                                                         div_penalty((2*idxPartition3+1):end),...
+                                                        recursionLevel, ...
                                                         Directives);
+
+      s1 = size(recursionTracker1_3, 1);
+      s2 = size(recursionTracker2_3, 1);
+      s3 = size(recursionTracker3_3, 1);
+      smax = max([s1, s2, s3]);
+      recursionTracker1_3(s1+1:smax, :, :) = NaN;
+      recursionTracker2_3(s2+1:smax, :, :) = NaN;
+      recursionTracker3_3(s3+1:smax, :, :) = NaN;
+      recursionTracker_ = [recursionTracker_; recursionTracker1_3, recursionTracker2_3, recursionTracker3_3];
+
       % and conquer!
       % AICFull = [AICc1_3,AICc2_3];
       polycoefs = cat(2,polycoefs1_3,polycoefs2_3,polycoefs3_3);
@@ -1317,7 +1379,8 @@ function [ne,neEnd,Ie,polycoefs,best_order,n_params,exitflag,nSteps,idx_out] = r
   % savename = sprintf('ut-%03i-%03i.mat',idx_in(1),numel(idx_in));
   % save(savename,'neEnd')
   % disp(['Leaving recurse_AICfit, nt: ',num2str(numel(idx_out))])
-
+  display(size(recursionTracker_))
+   
 end
 
 function [AICcSec,polycoefs,best_order,n_params,ne,neEnd,Ie,exitflags] = AICcFitParSeq(pp,ppstd,alpha,dt,ne00,A,polycoefs,ieprior,stdprior,Ie_prev,Directives)

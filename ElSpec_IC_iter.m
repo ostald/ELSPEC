@@ -32,7 +32,7 @@ experiment = 'arc1'
 %% 2 Setup of parameters controlling ELSPEC
 
 % Energy grid - between 10 ad 100 keV in 400 logarithmic/exponential steps
-egrid = logspace(1,5,200);
+egrid = logspace(1,6,200);
 
 % Data directories
 % The paths to the directories with the ionospheric parameters and the
@@ -49,7 +49,7 @@ egrid = logspace(1,5,200);
 %experiment = 'arc1';
 % Altitude-limits.
 hmax = 150;
-hmin = 95;
+hmin = 60;
 % Time-limits
 %btime = [2012, 12, 11, 20, 00, 0];
 %etime = [2012, 12, 11, 21, 55, 0];
@@ -57,7 +57,7 @@ hmin = 95;
 %btime = [ 2006 12 12 19 30 0];
 %etime = [ 2006 12 12 19 35 0];
 % Selection of which ionisation-profile method to use
-ionomodel = 'Sergienko';
+ionomodel = 'FANG';
 recombmodel = ['SheehanGr'];
 %recombmodel = ['SheehanGrFlipchem'];
 % and which type of continuity-integration-method to use
@@ -132,8 +132,8 @@ ElSpecOut = ElSpec_iqtcl('fitdir',fitdir,...
                                        'customIRI', customIRI, ...
                                        'customAlpha', customAlpha, ...
                                        'neinit', neinit, ...
-                                       'recombmodel', recombmodel,...
-                                       'div_penalty', div_penalty);
+                                       'recombmodel', recombmodel);,...
+%                                       'div_penalty', div_penalty);
 %                                       'ErrType',ErrType,...
 %                                       'ppReadingFcn',ppReadingFcn,...
 
