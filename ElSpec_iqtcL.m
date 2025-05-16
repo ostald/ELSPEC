@@ -855,7 +855,7 @@ while iStart < numel(dt)
                                                     out);
 
   clear recursionTracker
-  %                                                      recursionLevel, numel(dt),          cAICfull, cAIChalves, cAICthirds, div_penalty, [numel(dt),          1]
+  %                                                      recursionLevel, numel(dt),          cAICFull, cAIChalves, cAICthirds, div_penalty, [numel(dt),          1]
   recursionTracker(1, 1:numel(iStart:iEnd), :) = repmat([recursionLevel, numel(iStart:iEnd), NaN,      NaN,        NaN,        0],          [numel(iStart:iEnd), 1]);
 
   % 3rd enter the recursion
@@ -1089,7 +1089,7 @@ function [ne,neEnd,Ie,polycoefs,best_order,n_params,exitflag,nSteps,idx_out,recu
                   numel(ne), ...
                   Directives.ErrType, ...
                   Directives.ErrWidth ) + mean(div_penalty);
-  recursionTracker_(1, 1:numel(dt), :) = repmat([recursionLevel, numel(dt), AICfull, -1,  -1,  0],          [numel(dt), 1]);
+  recursionTracker_(1, 1:numel(dt), :) = repmat([recursionLevel, numel(dt), AICFull, -1,  -1,  0],          [numel(dt), 1]);
   if numel(dt) == 1 
     % Nothing more to be done just abandon mission, we have reached the
     % end of the branch
@@ -1175,9 +1175,9 @@ function [ne,neEnd,Ie,polycoefs,best_order,n_params,exitflag,nSteps,idx_out,recu
                       Directives.ErrWidth ) + mean(div_penalty(1:idxPartition3)) + mean(div_penalty((idxPartition3+1):(2*idxPartition3))) + mean(div_penalty((2*idxPartition3+1):end));
     end
 
-    %                                              recursionLevel, numel(dt), cAICfull, cAIChalves, cAICthirds, div_penalty, [numel(dt), 1]
-    recursionTracker_(1, 1:numel(dt), :) = repmat([recursionLevel, numel(dt), AICfull,  AIChalves,  AICthirds,  0],          [numel(dt), 1]);
-    display(size(recursionTracker_))
+    %                                              recursionLevel, numel(dt), cAICFull, cAIChalves, cAICthirds, div_penalty, [numel(dt), 1]
+    recursionTracker_(1, 1:numel(dt), :) = repmat([recursionLevel, numel(dt), AICFull,  AIChalves,  AICthirds,  0],          [numel(dt), 1]);
+    %display(size(recursionTracker_))
     
     if AIChalves < AICFull & AIChalves <= AICthirds
       % Divide into 2 halves
@@ -1369,7 +1369,7 @@ function [ne,neEnd,Ie,polycoefs,best_order,n_params,exitflag,nSteps,idx_out,recu
       %save('recurse_idx.mat','r_idx')
       %save(['recurse-checks-4-',sprintf('-%04i',r_idx)])
     else
-      % AICFull = AICfull(1)*ones(size(dt));
+      % AICFull = AICFull(1)*ones(size(dt));
       % Veni Vidi Conquestatum! When current region is sufficiently
       % well modeled and we just return back up
       % ne_End = neEnd;
